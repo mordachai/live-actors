@@ -11,6 +11,19 @@ Live Actors listens to your microphone and animates the speaking player in real 
 
 Everything runs peer-to-peer over Foundry's socket — no database writes, no server round-trip.
 
+### IMPORTANT, PAY ATTENTION:
+
+
+**Your browser will ask you for microphone access permissions. Allow it, even if you are not using audio through Foundry:**
+
+<img width="338" height="488" alt="image" src="https://github.com/user-attachments/assets/b4ac9eb7-bcd9-4c0f-a9d2-abceddd97b1c" />
+
+---
+
+**If you are using Foundry Audio on your game remind everyone at the table that they must config the audio to Always Enable or at least press the key to talk...**
+
+<img width="606" height="418" alt="image" src="https://github.com/user-attachments/assets/a5b8f6c7-8c5a-4316-9c01-3095c57216fd" />
+
 ---
 
 ## Contents
@@ -102,7 +115,7 @@ A floating portrait on screen, placed by the GM.
 - **Size**, **Keep Aspect Ratio**, **Show Name** / size.
 - **Mirror** (per player) — face inward.
 - **Portrait Mask**, **Cartoon Outline** + speaking glow.
-- **Prefer Avatar Image** — use a `-avatar` file instead of token art.
+- **Prefer Avatar Image** — use a `-avatar` file instead of visemes/token art. Chars without avatar fallback to visemes or just token images if they dont have any.
 
 *Config: Talking Heads Config. GM drags each head; positions save per scene.*
 
@@ -158,6 +171,8 @@ Goblin_token-sheet.webp     ← 2×2 flipbook   ← add this
 
 **B — Individual files:** four separate images — one for each viseme.
 
+**Suffixes**: `-AH`, `-EE`, `-OO`, `-CLOSED`
+
 <img width="910" height="270" alt="image" src="https://github.com/user-attachments/assets/0477b411-0650-44a4-9e37-dde26ea26e4b" />
 
 ```text
@@ -167,32 +182,48 @@ Katrina_token-AH.webp        ← open A / O
 Katrina_token-EE.webp        ← E / I / EE
 Katrina_token-OO.webp        ← OO / W / U
 ```
-
-**Suffixes**: `-AH`, `-EE`, `-OO`, `-CLOSED`
-
 > **Optional `-mask`** (`Katrina_token-mask.webp`) — a greyscale image; white = visible, black = transparent, grey = partial. Clips the token to any shape. One single mask per token (not a sheet of masks); it's applied after a frame is sliced from the sheet.
-
 
 > **Optional `-avatar`** (`Katrina_token-avatar.webp`) — a single full-body / alternate portrait for Talking Heads. Same naming rule: matches the **token** filename. It's one image, so it can't lip-sync (follows None/Simple). Used when *Prefer Avatar Image* is on.
 
-### Making sheets
+---
 
-**Without AI:** four mouth images at the same size, aligned by the eyes and top of the head. Export as separate images, it will be easy for you to keep them aligned.
+## Making the visemes
 
-**With AI — two prompts.** First lock-in the style you want, after thst builds the sheet:
+#### Without AI
 
-```
-Portrait of [subject, pose, and style] for a tabletop rpg. Square image. [Transparent]/[Neutral] background. No token frame. No text.
+Four mouth images at the same size, aligned by the eyes and top of the head. If you export as separate images from you prefered application it will be easy for you to keep them aligned. Softawres like Characer Animator and Unreal Metahuman can give you awesome results using 3D. Or just go crazy and do _Robot Chicken_ / _South Park_ mouths its a lot of fun!
 
-```
+<img width="909" height="236" alt="image" src="https://github.com/user-attachments/assets/ca4cef44-9e95-437e-b146-105afcadb623" />
 
-```
-From this image create 4 visemes for the mouth in a 2 by 2 spritesheet: Closed (top left), AH (top-right), EE (bottom left), OO (bottom right). Keep same pose, eye level, and same POV. Animate only the mouth and chin. Very subtle eye animation. No text.
+---
 
-```
+#### With AI — two prompts. 
 
-After the first character: *"do the same spritesheet, for a Dwarven Fighter with a warhammer"* gives fast matching results. Try it!
+First lock-in the style you want:, after that build the sheet. Examples:
 
+###### CREATION PROMPT: 
+
+_Portrait of **[subject, pose, and style]** for a tabletop rpg. Square image. **[Transparent]/[Neutral]** background. No token frame. No text._
+
+<img width="512" height="512" alt="Sylvie" src="https://github.com/user-attachments/assets/bf18be3e-4f0c-461d-bd1c-77058f7cb542" />
+
+
+###### SHEET PROMPT:
+
+_From this image create 4 visemes for the mouth in a 2 by 2 spritesheet: Closed (top left), AH (top-right), EE (bottom left), OO (bottom right). Keep same pose, eye level, and same POV. Animate only the mouth and chin. Very subtle eye animation. No text._
+
+<img width="512" height="512" alt="Sylvie_token-sheet" src="https://github.com/user-attachments/assets/32f68894-c22e-4719-8c59-94231b27667d" />
+
+After the first character you can keep reusing
+
+###### FOLLOW-UP PROMPT:
+
+_do the same spritesheet, for a **Dwarven Fighter with a warhammer"**_
+
+<img width="512" height="512" alt="Krotnik-sheet" src="https://github.com/user-attachments/assets/1c72ef9e-3e5e-4247-9d18-808869c965f3" />
+
+gives fast matching results. Try it!
 
 ---
 
@@ -215,7 +246,7 @@ _Avatar with outline and with player color outline + ring speaker animation_
 - Outline around the silhouette,
 - Two independent outlines: **Portrait / Viseme** and **Avatar**.
 - You can set the thickness (width) of both indenpendently.
-- Player Colour: it will assume the user color defined in Foundry for each player. NPCs will pick GM Colour.
+- Player Colour: it will assume the user color defined in Foundry User Configuration for each player. NPCs will pick GM Colour.
 - Using a Ring speak indicator will make it glow with the user color when speaking.
 
 ---
