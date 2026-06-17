@@ -5,11 +5,11 @@
 
 Live Actors listens to your microphone and animates the speaking player in real time. It can animate three places at once, each on its own:
 
-# A theather of the mind setup:
+# Vtuber alike table:
 
 <img width="950" height="534" alt="image" src="https://github.com/user-attachments/assets/67b08047-0509-4c5f-8d9e-2813baa9889c" />
 
-# Vtuber alike table:
+# A theather of the mind setup:
 
 <img width="950" height="535" alt="image" src="https://github.com/user-attachments/assets/0a6bed10-13aa-46e5-a974-ab9fea38cba0" />
 
