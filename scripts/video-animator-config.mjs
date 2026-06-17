@@ -11,8 +11,8 @@
 //     videoScaleHigh    — max scale (stretch, > 1.0)
 //     videoIntensity    — mic volume gain
 //     videoScaleDamping — smoothing (0 = jittery, 0.9+ = very smooth)
-//   And five client-scoped "clean mode" booleans:
-//     videoCleanName / videoCleanStatus / videoCleanControls / videoCleanVolume / videoCleanBorder
+//   And three client-scoped "clean mode" booleans:
+//     videoCleanName / videoCleanControls / videoCleanBorder
 //
 // UI GATING (CSS class pattern — same as TalkingHeadsConfig)
 //   .lva-bounce-on   → show/hide the Bounce Config fieldset
@@ -60,9 +60,7 @@ export class VideoAnimatorConfig extends HandlebarsApplicationMixin(ApplicationV
       presetOptions: BOUNCE_PRESET_OPTIONS.map(o => ({ ...o, selected: preset === o.value })),
       // Clean mode — client-scoped, so each GM client stores their own preference.
       cleanName:     get("videoCleanName"),
-      cleanStatus:   get("videoCleanStatus"),
       cleanControls: get("videoCleanControls"),
-      cleanVolume:   get("videoCleanVolume"),
       cleanBorder:   get("videoCleanBorder"),
     };
   }
@@ -94,9 +92,7 @@ export class VideoAnimatorConfig extends HandlebarsApplicationMixin(ApplicationV
 
     // Clean mode is client-scoped — read directly from the form checkboxes.
     await set("videoCleanName",     form.querySelector("input[name='cleanName']")?.checked     ?? false);
-    await set("videoCleanStatus",   form.querySelector("input[name='cleanStatus']")?.checked   ?? false);
     await set("videoCleanControls", form.querySelector("input[name='cleanControls']")?.checked ?? false);
-    await set("videoCleanVolume",   form.querySelector("input[name='cleanVolume']")?.checked   ?? false);
     await set("videoCleanBorder",   form.querySelector("input[name='cleanBorder']")?.checked   ?? false);
 
     // Re-scan all tiles immediately so changes are reflected without reload.

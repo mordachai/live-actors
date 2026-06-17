@@ -455,14 +455,18 @@ form:not(.lva-avatar-on) .lva-outline-col--avatar :is(input, select, button) {
 
 /* ── Clean mode — hide AV chrome elements ───────────────────────── */
 
-.camera-view.lva-clean-name .player-name         { display: none !important; }
-.camera-view.lva-clean-status .notification-bar  { display: none !important; }
-.camera-view.lva-clean-controls .control-bar     { display: none !important; }
-.camera-view.lva-clean-volume .volume-bar        { display: none !important; }
+.camera-view.lva-clean-name .player-name             { display: none !important; }
 
-/* Hide the tile border/speaking ring (Foundry's ::after inset overlay).
-   Applies in both normal and minimized mode since ::after handles both. */
+/* Hide Controls — status icons, all control buttons, volume slider, user-controls bar. */
+.camera-view.lva-clean-controls .notification-bar    { display: none !important; }
+.camera-view.lva-clean-controls .control-bar         { display: none !important; }
+.camera-view.lva-clean-controls .volume-bar          { display: none !important; }
+.camera-view.lva-clean-controls .user-controls       { display: none !important; }
+
+/* Hide the tile border/speaking ring (Foundry's ::after inset overlay) plus the
+   tile's own box-shadow. Applies in both normal and minimized mode. */
 .camera-view.lva-clean-border::after             { display: none !important; }
+.camera-view.lva-clean-border                    { box-shadow: none !important; }
 
 /* ── Minimized mode — circular clip + smaller portrait ──────────── */
 

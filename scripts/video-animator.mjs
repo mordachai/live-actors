@@ -159,9 +159,7 @@ export class VideoAnimator {
   // mutations here.
   static _applyCleanClasses(tileEl) {
     tileEl.classList.toggle("lva-clean-name",     game.settings.get("live-actors", "videoCleanName"));
-    tileEl.classList.toggle("lva-clean-status",   game.settings.get("live-actors", "videoCleanStatus"));
     tileEl.classList.toggle("lva-clean-controls", game.settings.get("live-actors", "videoCleanControls"));
-    tileEl.classList.toggle("lva-clean-volume",   game.settings.get("live-actors", "videoCleanVolume"));
     tileEl.classList.toggle("lva-clean-border",   game.settings.get("live-actors", "videoCleanBorder"));
   }
 

@@ -170,9 +170,7 @@ function registerSettings() {
 
   // Clean mode — client-scoped so each player controls their own AV chrome visibility.
   game.settings.register("live-actors", "videoCleanName",     { scope: "client", config: false, type: Boolean, default: false, onChange: () => VideoAnimator._scanAll() });
-  game.settings.register("live-actors", "videoCleanStatus",   { scope: "client", config: false, type: Boolean, default: false, onChange: () => VideoAnimator._scanAll() });
-  game.settings.register("live-actors", "videoCleanControls", { scope: "client", config: false, type: Boolean, default: false, onChange: () => VideoAnimator._scanAll() });
-  game.settings.register("live-actors", "videoCleanVolume",   { scope: "client", config: false, type: Boolean, default: false, onChange: () => VideoAnimator._scanAll() });
+  game.settings.register("live-actors", "videoCleanControls", { scope: "client", config: false, type: Boolean, default: true, onChange: () => VideoAnimator._scanAll() });
   game.settings.register("live-actors", "videoCleanBorder",   { scope: "client", config: false, type: Boolean, default: true, onChange: () => VideoAnimator._scanAll() });
 
   // ── Hidden — managed by scene control toggle button ───────────
