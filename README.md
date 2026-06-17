@@ -5,9 +5,9 @@
 
 Live Actors listens to your microphone and animates the speaking player in real time. It can animate three places at once, each on its own:
 
-- **Token** — the actual token on the canvas.
-- **Video** — the A/V camera tile, while your camera is off.
-- **Avatar** — a floating "Talking Head" portrait on screen.
+- **Token** — Animates your actual token on the canvas with lip-sync or just some speach indicators.
+- **Video** — Display the lip-sync and/or animation on the Audio/Video camera of Foundry when the camera is off. No need to run audio through Foundry, just let it pick the mic in the browser.
+- **Avatar** — a floating "Talking Head" portrait on screen, use this if you dont want to use the camera area.
 
 Everything runs peer-to-peer over Foundry's socket — no database writes, no server round-trip.
 
@@ -18,6 +18,7 @@ Everything runs peer-to-peer over Foundry's socket — no database writes, no se
 - [Animation Modes & Places](#animation-modes--places)
 - [Speaker Indicators](#speaker-indicators)
 - [Viseme Images (lip-sync)](#viseme-images-lip-sync)
+- [Masks & Cartoon Outline](#masks--cartoon-outline)
 - [Settings](#settings)
 - [Installation](#installation)
 - [License](#license)
@@ -189,9 +190,24 @@ From this image create 4 visemes for the mouth in a 2 by 2 spritesheet: Closed (
 
 ---
 
+## Masks & Cartoon Outline
 
+### Mask — clip the art to a shape
 
-<img width="553" height="282" alt="image" src="https://github.com/user-attachments/assets/3518ca46-255b-4d5a-88b2-d3ceffa4629f" />
+- Luminance stencil (black & white): **white = opaque, black = transparent, grey = partial.**
+- **For token usage:** a `-mask` file (`Katrina_token-mask.webp`).
+- **For talking heads (same for all):** Talking Heads Config → *Portrait Mask*.
+- Two ready-made masks ship in `assets/masks/` (`grunge-1`, `grunge-2`).
+
+<img width="553" height="282" alt="Mask example: greyscale stencil clipping a portrait to shape" src="https://github.com/user-attachments/assets/3518ca46-255b-4d5a-88b2-d3ceffa4629f" />
+
+### Cartoon Outline (Talking Heads / Avatar only)
+
+- Outline around the silhouette,
+- Two independent outlines: **Portrait / Viseme** and **Avatar**.
+- You can set the thickness (width) of both indenpendently.
+- Player Colour: it will assume the user color defined in Foundry for each player. NPCs will pick GM Colour.
+- Using a Ring speak indicator will make it glow with the user color when speaking.
 
 ---
 
