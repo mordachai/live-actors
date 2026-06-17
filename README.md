@@ -36,7 +36,7 @@ Animate your token in real time as you speak. Live Actors listens to your microp
 
 > The GM controls all world-level animation settings, so everyone animates the same way. Only **Mic Sensitivity** and **Disable Live Actors** are per-client.
 
-<img width="96" height="570" alt="image" src="https://github.com/user-attachments/assets/5925d972-67da-4f2c-89b7-84d04d72e9dd" />
+<img width="177" height="533" alt="image" src="https://github.com/user-attachments/assets/6ce63415-6dee-4009-8d06-105283494a8c" />
 
 ---
 
@@ -56,7 +56,7 @@ The effective mode is decided **per token**: a token with no viseme images in an
 
 ---
 
-## Two Surfaces: Tokens & Talking Heads
+## Three Surfaces: Video, Tokens & Talking Heads
 
 The same voice drives two independent layers. Enable either or both:
 
@@ -64,6 +64,8 @@ The same voice drives two independent layers. Enable either or both:
 - **Talking Heads** — a floating portrait on screen, dragged into place by the GM (*Talking Heads Config*).
 
 The two have separate mode settings and separate bounce presets — tune them independently.
+
+<img width="489" height="417" alt="image" src="https://github.com/user-attachments/assets/437d0f4a-f5bd-41b5-89d9-3dcabd08daaf" />
 
 ---
 
