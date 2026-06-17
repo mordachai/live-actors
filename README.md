@@ -225,26 +225,28 @@ Four mouth images at the same size, aligned by the eyes and top of the head. If 
 
 #### With AI: Use two prompts
 
-First lock-in the style you want, after that build the sheet. Examples:
+Build the **base portrait first**, then feed it back as the input image for the sheet. This two-step flow is what keeps the frames registered: the model edits one fixed face instead of inventing four from scratch, so the eyes, head, and lens don't drift between cells. Examples:
 
 ###### CREATION PROMPT: 
 
-_Portrait of **[subject, pose, and style]** for a tabletop rpg. Square image. **[Transparent]/[Neutral]** background. No token frame. No text._
+_Portrait of **[subject, pose, and style]** for a tabletop rpg. Square image. Fully transparent background (alpha channel, PNG) — no background fill, no shadow on the background. No token frame. No text._
 
 <img width="512" height="512" alt="Sylvie" src="https://github.com/user-attachments/assets/bf18be3e-4f0c-461d-bd1c-77058f7cb542" />
 
 
 ###### SHEET PROMPT:
 
-_From this image create 4 visemes for the mouth in a 2 by 2 spritesheet: Closed (top left), AH (top-right), EE (bottom left), OO (bottom right). Keep same pose, eye level, and same POV. Animate only the mouth and chin. Very subtle eye animation. No text._
+_From this image, create 4 mouth visemes as a 2×2 sprite sheet on a fully transparent background (alpha PNG): Closed (top-left), AH (top-right), EE (bottom-left), OO (bottom-right). These frames are swapped rapidly in a replacement animation, so they must register pixel-perfectly: keep head size and position, top-of-head line, eye line, nose, camera lens, POV, framing, and lighting IDENTICAL in all four quadrants. Each quadrant exactly equal size, subject centered identically in each cell. Animate only the mouth and chin; eyes near-still (very subtle motion only). No background fill, no shadow on background, no text, no borders, no grid lines._
 
 <img width="512" height="512" alt="Sylvie_token-sheet" src="https://github.com/user-attachments/assets/32f68894-c22e-4719-8c59-94231b27667d" />
+
+> **If frames still jitter,** drop the 2×2 sheet and generate each viseme as a separate edit of the same base portrait (`-closed`, `-AH`, `-EE`, `-OO`), changing only the mouth each time. Editing one fixed image locks the geometry far harder than any one-shot grid. The module reads either layout.
 
 After the first character you can keep producing images easily:
 
 ###### FOLLOW-UP PROMPT:
 
-_do the same spritesheet, for a **Dwarven Fighter with a warhammer**_
+_do the same spritesheet, transparent background, same registration, for a **Dwarven Fighter with a warhammer**_
 
 <img width="512" height="512" alt="Krotnik-sheet" src="https://github.com/user-attachments/assets/1c72ef9e-3e5e-4247-9d18-808869c965f3" />
 
