@@ -44,6 +44,8 @@ The effective mode is decided per token: no viseme images in a Lip-Sync/Hybrid/B
 
 Set independently per place. You can have the avatar fully animate while the token only flashes a ring.
 
+<img width="525" height="273" alt="image" src="https://github.com/user-attachments/assets/48fce629-fa0f-426f-bd42-9f92d952e7e0" />
+
 - **Ring** — coloured border in the speaking user's colour (set in *User Configuration*).
 - **Bubble** — small animated speech bubble above the token/portrait.
 
@@ -57,16 +59,13 @@ Each place has its own config menu and its own bounce preset. Tune them separate
 </tr>
 <tr>
 <td valign="top">
-<!-- TODO: token example image -->
-<img alt="Token animation" src="" />
+<img width="310" height="219" alt="image" src="https://github.com/user-attachments/assets/d6702009-d026-4ab8-9530-02777cc61ff0" />
 </td>
 <td valign="top">
-<!-- TODO: video tile example image -->
-<img alt="Video tile animation" src="" />
+<img width="310" height="219" alt="image" src="https://github.com/user-attachments/assets/14265841-0fbf-44bd-a7b9-d9fdc2bf23dc" />
 </td>
 <td valign="top">
-<!-- TODO: talking head example image -->
-<img alt="Talking head animation" src="" />
+<img width="310" height="219" alt="image" src="https://github.com/user-attachments/assets/499b07ef-2744-47ae-8988-5dac604ba949" />
 </td>
 </tr>
 <tr>
@@ -174,12 +173,14 @@ Katrina_token-OO.webp        ← OO / W / U
 
 **With AI — two prompts.** First locks the style, then builds the sheet:
 
-```text
+```
 Portrait of [subject and style] for a tabletop rpg. Square image. Transparent background. No token frame.
+
 ```
 
-```text
+```
 From this image create 4 visemes for the mouth in a 2 by 2 spritesheet: Closed (top left), AH (top-right), EE (bottom left), OO (bottom right). Keep same position and same POV, animate only the mouth and do subtle eye animation. No text.
+
 ```
 
 > ChatGPT handles transparency best. After the first character, *"do the same, but a Dwarven Shopkeeper"* gives fast matching results.
@@ -188,19 +189,27 @@ From this image create 4 visemes for the mouth in a 2 by 2 spritesheet: Closed (
 
 ---
 
+
+
+<img width="553" height="282" alt="image" src="https://github.com/user-attachments/assets/3518ca46-255b-4d5a-88b2-d3ceffa4629f" />
+
+---
+
 ## Settings
+
+<img width="794" height="694" alt="image" src="https://github.com/user-attachments/assets/49eab535-a286-4aa4-832a-633fa61d8694" />
 
 **Module Settings → Live Actors** (top-level), in panel order:
 
 | Setting | What it does |
 | --- | --- |
-| **Mic Sensitivity** | Raise for quiet mics, lower to cut background noise. |
 | **Token Animation Config** | Token mode, indicator, bounce preset, mask. |
-| **Speaker Widget** | GM toolbar button to speak through NPC tokens. |
 | **Talking Heads Config** | Avatar visibility, size, mask, mirror, outline, avatar image, mode, bounce preset. |
 | **Video Window Config** | Video tile mode, clean mode, bounce preset. |
-| **Pause During Encounters** | Auto-disable while combat is active on the scene. |
-| **Disable Live Actors** | Kills all mic/animation on this client. |
+| **Mic Sensitivity** | Raise for quiet mics, lower to cut background noise. |
+| **Speaker Widget** | GM toolbar button to speak through NPC tokens. Surpass selection. |
+| **Pause During Encounters** | Auto-disable while a combat encounter is active on the scene. |
+| **Disable Live Actors** | Kills all mic/animation on this client. Per user setting. |
 
 Each config menu has a **Bounce Preset** dropdown — pick a ready-made simple-animation feel. Presets are tuned per place (token / head / video tile).
 
