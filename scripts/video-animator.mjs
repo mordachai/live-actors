@@ -122,6 +122,12 @@ export class VideoAnimator {
     for (const tileEl of document.querySelectorAll(".camera-view[data-user]")) {
       VideoAnimator._syncTile(tileEl, videoMode);
     }
+    // The dock's global control bar (.user-controls) is a sibling of the tiles,
+    // not inside a .camera-view, so toggle the clean class on the dock root too.
+    const cleanControls = game.settings.get("live-actors", "videoCleanControls");
+    for (const dock of document.querySelectorAll("#camera-views, [id^='camera-view-']")) {
+      dock.classList.toggle("lva-clean-controls", cleanControls);
+    }
   }
 
   // ── Per-tile management ───────────────────────────────────────────────────

@@ -462,6 +462,9 @@ form:not(.lva-avatar-on) .lva-outline-col--avatar :is(input, select, button) {
 .camera-view.lva-clean-controls .control-bar         { display: none !important; }
 .camera-view.lva-clean-controls .volume-bar          { display: none !important; }
 .camera-view.lva-clean-controls .user-controls       { display: none !important; }
+/* Dock-level global control bar (sibling of the tiles, not inside one). */
+#camera-views.lva-clean-controls .user-controls,
+[id^="camera-view-"].lva-clean-controls .user-controls { display: none !important; }
 
 /* Hide the tile border/speaking ring (Foundry's ::after inset overlay) plus the
    tile's own box-shadow. Applies in both normal and minimized mode. */
