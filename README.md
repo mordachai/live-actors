@@ -135,11 +135,15 @@ It's approximate, not a phoneme-perfect transcription — the goal is a believab
 
 This is the key rule: **the suffixed files must match the filename of the token image** (the image set as the token's art), because the module finds them by looking next to that file. The actor's *portrait* in the sheet can be any image you like — it's not used for discovery.
 
-So if your token art is `Katrina_token.webp`, every extra file is `Katrina_token-<suffix>.webp`, in the **same folder**.
+> So if your token art is **_Katrina_token.webp_** , every extra file is **_Katrina_token-<suffix>.webp_**, in the _same folder_.
 
-Two ways to supply the four shapes:
+Two ways to supply the four shapes. Choose just one per character, but you can use them together in the same game without issues:
 
-**A — Flipbook (recommended):** one image, a 2×2 grid, `-sheet` suffix.
+**A — Flipbook (recommended):** one image, a 2×2 grid, **-sheet** suffix.
+
+Position of the images matter
+
+<img width="512" height="512" alt="goblin-sheet" src="https://github.com/user-attachments/assets/0df95dbc-6209-4c8a-b7d1-bc622765a686" />
 
 ```text
 ┌──────────┬──────────┐
@@ -148,11 +152,13 @@ Two ways to supply the four shapes:
 │    EE    │    OO    │   ← bottom row
 └──────────┴──────────┘
 
-Katrina_token.webp           ← token art (the discovery name)
-Katrina_token-sheet.webp     ← 2×2 flipbook   ← add this
+Goblin_token.webp           ← token art (the discovery name)
+Goblin_token-sheet.webp     ← 2×2 flipbook   ← add this
 ```
 
-**B — Individual files:** four separate images — a dedicated `-closed` resting frame plus the three open shapes.
+**B — Individual files:** four separate images — one for each viseme.
+
+<img width="910" height="270" alt="image" src="https://github.com/user-attachments/assets/0477b411-0650-44a4-9e37-dde26ea26e4b" />
 
 ```text
 Katrina_token.webp           ← token art (untouched)
@@ -199,9 +205,12 @@ From this image create 4 visemes for the mouth in a 2 by 2 spritesheet: Closed (
 - **For talking heads (same for all):** Talking Heads Config → *Portrait Mask*.
 - Two ready-made masks ship in `assets/masks/` (`grunge-1`, `grunge-2`).
 
-<img width="553" height="282" alt="Mask example: greyscale stencil clipping a portrait to shape" src="https://github.com/user-attachments/assets/3518ca46-255b-4d5a-88b2-d3ceffa4629f" />
+<img width="553" height="282" alt="greyscale stencil clipping a portrait to shape" src="https://github.com/user-attachments/assets/3518ca46-255b-4d5a-88b2-d3ceffa4629f" />
 
 ### Cartoon Outline (Talking Heads / Avatar only)
+
+<img width="324" height="324" alt="image" src="https://github.com/user-attachments/assets/53c40de3-3450-4914-be8c-2e355a620255" />
+_Avatar with outline and with player color outline + ring speaker animation_
 
 - Outline around the silhouette,
 - Two independent outlines: **Portrait / Viseme** and **Avatar**.
