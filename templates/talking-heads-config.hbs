@@ -1,0 +1,221 @@
+<form class="lva-heads-config standard-form {{#if showBounce}}lva-bounce-on{{/if}} {{#if headOutline}}lva-outline-on{{/if}} {{#if useAvatar}}lva-avatar-on{{/if}} {{#if headAvatarOutline}}lva-avatar-outline-on{{/if}}" autocomplete="off">
+
+  <fieldset>
+    <legend>Animation Mode</legend>
+    <div class="form-group slim">
+      <label>Mode</label>
+      <div class="form-fields">
+        <select name="headMode">
+          {{#each modeOptions}}
+          <option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+          {{/each}}
+        </select>
+      </div>
+      <p class="hint">One mode for every head; each head is clamped to what its assets allow. <strong>Visemes</strong> (sheet / 4 imgs) can do all modes. <strong>Avatar</strong> (solo img) and <strong>token-only</strong> heads can only bounce — Simple/Hybrid/Both → bounce, Advanced → static, None → still. For a mixed world (some visemes, some avatars) use <strong>Hybrid</strong>: visemes lip-sync, everything else bounces.</p>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Speaking Indicator</legend>
+    <div class="form-group slim">
+      <label>Style</label>
+      <div class="form-fields">
+        <select name="headIndicatorStyle">
+          {{#each indicatorOptions}}
+          <option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+          {{/each}}
+        </select>
+      </div>
+      <p class="hint">Ring: coloured border glow. Bubble: animated speech bubble above the portrait. Independent from the canvas token indicator.</p>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Portrait</legend>
+    <div class="form-group slim">
+      <label>Always Visible</label>
+      <div class="form-fields">
+        <input type="checkbox" name="headsAlways" {{#if headsAlways}}checked{{/if}}>
+      </div>
+      <p class="hint">On: portraits stay on screen at all times. Off: a portrait only appears while that player is talking. To disable talking heads entirely, set Animation Mode to None.</p>
+    </div>
+    <div class="form-group slim">
+      <label>Prefer Avatar Image</label>
+      <div class="form-fields">
+        <input type="checkbox" name="headUseAvatar" {{#if useAvatar}}checked{{/if}}>
+      </div>
+      <p class="hint">When a "{token}-avatar" image exists, show it (full-body/portrait) instead of the token art. Avatar is a solo image, so it can't lip-sync — it follows the Animation Mode above, clamped to None/Simple. Heads with no avatar keep using their visemes/token art.</p>
+    </div>
+    <div class="form-group slim">
+      <label>Portrait Size (px)</label>
+      <div class="form-fields">
+        <input type="range" name="headWidth" min="100" max="340" step="4" value="{{headWidth}}">
+        <span class="range-value">{{headWidth}}</span>
+      </div>
+      <p class="hint">Width for viseme/token heads. Height scales with the image when Keep Aspect Ratio is enabled.</p>
+    </div>
+    <div class="form-group slim">
+      <label>Avatar Size (px)</label>
+      <div class="form-fields">
+        <input type="range" name="headAvatarWidth" min="100" max="600" step="10" value="{{headAvatarWidth}}">
+        <span class="range-value">{{headAvatarWidth}}</span>
+      </div>
+      <p class="hint">Width for avatar heads. Height always scales with the image's aspect ratio.</p>
+    </div>
+    <div class="form-group slim">
+      <label>Keep Aspect Ratio</label>
+      <div class="form-fields">
+        <input type="checkbox" name="headAspectRatio" {{#if headAspectRatio}}checked{{/if}}>
+      </div>
+      <p class="hint">Preserve natural proportions for viseme/token heads (avatars always keep aspect). Disable for square portraits; enable for tall images.</p>
+    </div>
+    <div class="form-group slim">
+      <label>Show Name</label>
+      <div class="form-fields">
+        <input type="checkbox" name="showHeadName" {{#if showHeadName}}checked{{/if}}>
+      </div>
+      <p class="hint">Display the character name below each portrait.</p>
+    </div>
+    <div class="form-group slim">
+      <label>Name Size</label>
+      <div class="form-fields">
+        <input type="range" name="headNameSize" min="0.5" max="2.5" step="0.1" value="{{headNameSize}}">
+        <span class="range-value">{{headNameSize}}</span>
+      </div>
+      <p class="hint">Multiplier on the name plate font size. 1.0 = default (auto-scaled with portrait width).</p>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Appearance</legend>
+    <div class="form-group slim">
+      <label>Portrait Mask</label>
+      <div class="form-fields">
+        <input type="text" name="headMask" value="{{headMask}}" placeholder="Path to mask image (optional)...">
+        <button type="button" data-action="browseMask" title="Browse for mask image">
+          <i class="fas fa-file-image"></i>
+        </button>
+        <button type="button" data-action="clearMask" title="Clear mask">
+          <i class="fas fa-trash"></i>
+        </button>
+      </div>
+      <p class="hint">Optional mask image applied to all talking head portraits. White = visible, transparent/black = hidden. One file for all heads.</p>
+    </div>
+  </fieldset>
+
+  <div class="lva-outline-columns">
+  <fieldset class="lva-outline-col lva-outline-col--portrait">
+    <legend>Portrait / Viseme Outline</legend>
+    <p class="hint">Applies to viseme &amp; token heads. Always active.</p>
+    <div class="form-group slim">
+      <label>Outline</label>
+      <div class="form-fields">
+        <input type="checkbox" name="headOutline" {{#if headOutline}}checked{{/if}}>
+      </div>
+      <p class="hint">Cartoon outline around the silhouette. Needs alpha: a Portrait Mask, or Cutout for transparent-PNG art. Plain rectangular images keep the normal ring.</p>
+    </div>
+    <div class="form-group slim lva-outline-only">
+      <label>Cutout Portraits</label>
+      <div class="form-fields">
+        <input type="checkbox" name="headCutout" {{#if headCutout}}checked{{/if}}>
+      </div>
+      <p class="hint">Treat portraits as transparent cutouts (no mask needed) so the outline and speaking ring follow the PNG's own alpha shape.</p>
+    </div>
+    <div class="form-group slim lva-outline-only">
+      <label>Width (px)</label>
+      <div class="form-fields">
+        <input type="range" name="headOutlineWidth" min="1" max="10" step="1" value="{{headOutlineWidth}}">
+        <span class="range-value">{{headOutlineWidth}}</span>
+      </div>
+    </div>
+    <div class="form-group slim lva-outline-only">
+      <label>Player Colour</label>
+      <div class="form-fields">
+        <input type="checkbox" name="headOutlineAuto" {{#if headOutlineAuto}}checked{{/if}}>
+      </div>
+      <p class="hint">On: each portrait is outlined in that player's colour. Off: use the fixed colour below.</p>
+    </div>
+    <div class="form-group slim lva-outline-only">
+      <label>Colour</label>
+      <div class="form-fields">
+        <input type="color" name="headOutlineColor" value="{{headOutlineColor}}">
+      </div>
+      <p class="hint">Used only when "Use Player Colour" is off.</p>
+    </div>
+  </fieldset>
+
+  <fieldset class="lva-outline-col lva-outline-col--avatar">
+    <legend>Avatar Outline</legend>
+    <p class="hint">Applies to avatar heads. Dimmed when Prefer Avatar Image is off.</p>
+    <div class="form-group slim">
+      <label>Outline</label>
+      <div class="form-fields">
+        <input type="checkbox" name="headAvatarOutline" {{#if headAvatarOutline}}checked{{/if}}>
+      </div>
+      <p class="hint">Outline along the avatar PNG's own alpha silhouette. Separate from the portrait outline.</p>
+    </div>
+    <div class="form-group slim lva-avatar-outline-only">
+      <label>Width (px)</label>
+      <div class="form-fields">
+        <input type="range" name="headAvatarOutlineWidth" min="1" max="10" step="1" value="{{headAvatarOutlineWidth}}">
+        <span class="range-value">{{headAvatarOutlineWidth}}</span>
+      </div>
+    </div>
+    <div class="form-group slim lva-avatar-outline-only">
+      <label>Player Colour</label>
+      <div class="form-fields">
+        <input type="checkbox" name="headAvatarOutlineAuto" {{#if headAvatarOutlineAuto}}checked{{/if}}>
+      </div>
+      <p class="hint">On: each avatar is outlined in that player's colour. Off: use the fixed colour below.</p>
+    </div>
+    <div class="form-group slim lva-avatar-outline-only">
+      <label>Colour</label>
+      <div class="form-fields">
+        <input type="color" name="headAvatarOutlineColor" value="{{headAvatarOutlineColor}}">
+      </div>
+      <p class="hint">Used only when "Use Player Colour" is off.</p>
+    </div>
+  </fieldset>
+  </div>
+
+  <fieldset class="lva-bounce-config">
+    <legend>Bounce Config</legend>
+    <div class="form-group slim">
+      <label>Preset</label>
+      <div class="form-fields">
+        <select name="headBouncePreset">
+          {{#each presetOptions}}
+          <option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+          {{/each}}
+        </select>
+      </div>
+      <p class="hint">Choose a bounce style. Used when Debug mode is off. Tune preset values in scripts/animation-presets.mjs.</p>
+    </div>
+  </fieldset>
+
+  {{#if players}}
+  <fieldset>
+    <legend>Mirror (per player)</legend>
+    {{#each players}}
+    <div class="form-group slim">
+      <label>{{name}}</label>
+      <div class="form-fields">
+        <input type="hidden" name="mirrorUserId" value="{{userId}}">
+        <label class="lva-mirror-label">
+          <input type="checkbox" name="mirror-{{userId}}" {{#if mirrored}}checked{{/if}}>
+          Flip portrait horizontally
+        </label>
+      </div>
+    </div>
+    {{/each}}
+    <p class="hint">Mirror flips a portrait so characters face inward. Applies to all viewers.</p>
+  </fieldset>
+  {{/if}}
+
+  <footer class="sheet-footer flexrow">
+    <button type="button" data-action="save">
+      <i class="fas fa-save"></i> Save
+    </button>
+  </footer>
+
+</form>

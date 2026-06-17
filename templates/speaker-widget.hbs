@@ -1,0 +1,28 @@
+<div class="lva-widget">
+  {{#if tokens}}
+  <div class="lva-token-grid">
+    {{#each tokens}}
+    <button class="lva-token-cell{{#if pinned}} lva-pinned{{/if}}"
+            type="button"
+            data-action="selectToken"
+            data-token-id="{{id}}"
+            title="{{name}}">
+      <div class="lva-token-img">
+        <img src="{{img}}" alt="{{name}}">
+      </div>
+      <span class="lva-token-name">{{name}}</span>
+    </button>
+    {{/each}}
+  </div>
+  {{else}}
+  <p class="lva-empty">No NPC tokens in scene.</p>
+  {{/if}}
+
+  {{#if hasPinned}}
+  <footer class="lva-widget-footer">
+    <button type="button" data-action="clearPin">
+      <i class="fas fa-times"></i> Clear Speaker
+    </button>
+  </footer>
+  {{/if}}
+</div>

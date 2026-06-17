@@ -1,0 +1,526 @@
+/* ── Simple Animation Config ────────────────────────────────── */
+
+/* Make the window content area scroll so the Save footer is always reachable */
+#live-actors-simple-config .window-content {
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+#live-actors-simple-config .lva-simple-config {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+#live-actors-simple-config .lva-simple-config .sheet-footer {
+  position: sticky;
+  bottom: 0;
+  /* background: var(--color-bg-option, #f0ebe4); */
+  padding-top: 0.5rem;
+  margin-top: auto;
+  justify-content: flex-end;
+  z-index: 1;
+}
+
+#live-actors-simple-config .lva-simple-config fieldset {
+  border: 1px solid var(--color-border-light-tertiary, #ccc);
+  border-radius: 4px;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem 0.75rem 0.25rem;
+}
+
+#live-actors-simple-config .lva-simple-config fieldset legend {
+  font-weight: bold;
+  font-size: 0.8em;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-light-6, #888);
+  padding: 0 0.25rem;
+}
+
+#live-actors-simple-config .lva-simple-config .range-value {
+  flex: 0 0 4ch;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.85em;
+}
+
+/* ── Speaker Widget ─────────────────────────────────────────── */
+
+#live-actors-widget .lva-token-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  padding: 10px;
+  max-height: 340px;   /* ~4 rows before scroll (4×50px + names + gaps + padding) */
+  overflow-y: auto;
+  overflow-x: hidden;  /* no horizontal scroll ever */
+}
+
+#live-actors-widget .lva-token-cell {
+  width: 100%;
+  height: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-family: inherit;
+  color: color-mix(in srgb, var(--color-text-primary) 80%, transparent);
+
+  &:hover {
+    color: var(--color-text-primary);
+  }
+}
+
+#live-actors-widget .lva-token-img {
+  width: 50px;
+  height: 50px;
+  flex-shrink: 0;
+  border-radius: 5px;
+  overflow: hidden;
+  outline: 2px solid transparent;
+  outline-offset: 1px;
+  transition: outline-color 0.12s, box-shadow 0.12s;
+  pointer-events: none;
+}
+
+#live-actors-widget .lva-token-cell:hover .lva-token-img {
+  outline-color: var(--color-border-highlight, #ff6400);
+}
+
+#live-actors-widget .lva-token-cell.lva-pinned .lva-token-img {
+  outline-color: var(--color-border-highlight, #ff6400);
+  box-shadow: 0 0 8px rgba(255, 100, 0, 0.5);
+}
+
+#live-actors-widget .lva-token-cell img {
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+}
+
+#live-actors-widget .lva-token-name {
+  width: 54px;
+  margin-top: 4px;
+  font-size: 0.7em;
+  line-height: 1.3;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+#live-actors-widget .lva-empty {
+  padding: 1.5rem 1rem;
+  text-align: center;
+  color: var(--color-text-light-6, #888);
+  font-style: italic;
+  font-size: 0.85em;
+}
+
+#live-actors-widget .lva-widget-footer {
+  padding: 6px 10px;
+  border-top: 1px solid var(--color-border-light-tertiary, #ccc);
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* ── Talking Heads Overlay ──────────────────────────────────────── */
+
+#lva-talking-heads {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 70;
+}
+
+.lva-head {
+  position: absolute;
+  pointer-events: all;
+  /* width set via inline style from headWidth setting */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  user-select: none;
+  transition: opacity 0.3s ease;
+}
+
+#lva-talking-heads.lva-mode-speaking .lva-head:not(.lva-speaking) {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.lva-head-frame {
+  position: relative;
+  /* width / height set via inline style from headWidth setting */
+  border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid transparent;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  flex-shrink: 0;
+}
+
+/* Aspect-ratio mode: natural proportions, rounded rect instead of circle */
+.lva-head-frame--ratio {
+  border-radius: 8px;
+  height: auto;
+}
+
+/* Border glow mirrors the canvas ring indicator — only when lva-head--show-ring is set.
+   Color comes from the player's user color, set as --lva-player-color on the head element. */
+.lva-head--show-ring.lva-speaking .lva-head-frame {
+  border-color: var(--lva-player-color, #ff6400);
+  box-shadow: 0 0 16px var(--lva-player-color-glow, rgba(255, 100, 0, 0.65)), 0 2px 10px rgba(0, 0, 0, 0.65);
+}
+
+.lva-head-frame {
+  will-change: transform;
+}
+
+/* ── Cartoon silhouette outline (Talking Heads only) ──────────────────────
+   Structure: .lva-head-glow > .lva-head-outline(SVG feMorphology) > .lva-head-frame.
+   In silhouette mode the box ring on the frame is suppressed; the speaking
+   indicator becomes an alpha-shaped glow on the glow wrapper instead. */
+.lva-head--silhouette .lva-head-frame,
+.lva-head--silhouette.lva-head--show-ring.lva-speaking .lva-head-frame,
+/* Avatar heads are transparent full-body art — the box-ring border wraps the
+   whole bounding box and reads as an unwanted outline. Suppress it; avatars use
+   the silhouette glow (when avatar outline is on) for the speaking indicator. */
+.lva-head--avatar .lva-head-frame,
+.lva-head--avatar.lva-head--show-ring.lva-speaking .lva-head-frame {
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.lva-head-glow {
+  display: block;
+  transition: filter 0.15s ease;
+}
+
+.lva-head-outline {
+  display: block;
+}
+
+.lva-head-filter {
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+
+/* Speaking ring in silhouette mode: drop-shadow hugs the outlined silhouette. */
+.lva-head--silhouette.lva-head--show-ring.lva-speaking .lva-head-glow {
+  filter: drop-shadow(0 0 5px var(--lva-player-color, #ff6400))
+          drop-shadow(0 0 10px var(--lva-player-color-glow, rgba(255, 100, 0, 0.65)));
+}
+
+.lva-head-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Aspect-ratio mode: let the image determine height */
+.lva-head-frame--ratio .lva-head-img {
+  height: auto;
+  object-fit: contain;
+}
+
+.lva-head-name {
+  /* font-size set inline from headWidth — scales proportionally with portrait size */
+  font-weight: bold;
+  color: #ffffff;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.95), 0 0 8px rgba(0, 0, 0, 0.7);
+  text-align: center;
+  /* max-width set via inline style to match headWidth setting */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Speech bubble — floats above the portrait frame */
+.lva-head-bubble {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translate(-50%, calc(-100% - 6px));
+  background: rgba(255, 255, 255, 0.93);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 10px;
+  padding: 3px 8px;
+  font-size: 11px;
+  color: #444;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  z-index: 1;
+}
+
+/* Tail pointing down */
+.lva-head-bubble::before {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: rgba(0, 0, 0, 0.12);
+}
+
+.lva-head-bubble::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: rgba(255, 255, 255, 0.93);
+}
+
+.lva-head--show-bubble.lva-speaking .lva-head-bubble {
+  opacity: 1;
+}
+
+/* GM drag cursor */
+.lva-head[data-draggable="true"] {
+  cursor: grab;
+}
+
+.lva-head[data-draggable="true"]:active {
+  cursor: grabbing;
+}
+
+/* ── Talking Heads Config ───────────────────────────────────────── */
+
+/* Make the window content area scroll so the Save footer is always reachable */
+#live-actors-heads-config .window-content {
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+#live-actors-heads-config .lva-heads-config {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+#live-actors-heads-config .lva-heads-config .sheet-footer {
+  position: sticky;
+  bottom: 0;
+  /* background: var(--color-bg-option, #f0ebe4); */
+  padding-top: 0.5rem;
+  margin-top: auto;
+  justify-content: flex-end;
+  z-index: 1;
+}
+
+#live-actors-heads-config .lva-heads-config fieldset {
+  border: 1px solid var(--color-border-light-tertiary, #ccc);
+  border-radius: 4px;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem 0.75rem 0.25rem;
+}
+
+#live-actors-heads-config .lva-heads-config fieldset legend {
+  font-weight: bold;
+  font-size: 0.8em;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-light-6, #888);
+  padding: 0 0.25rem;
+}
+
+#live-actors-heads-config .lva-heads-config .form-fields input[type="text"] {
+  flex: 1;
+  min-width: 0;
+}
+
+#live-actors-heads-config .lva-heads-config .range-value {
+  flex: 0 0 4ch;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.85em;
+}
+
+#live-actors-heads-config .lva-mirror-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85em;
+  cursor: pointer;
+}
+
+/* Bounce config: only shown for bounce-driven modes (simple/hybrid/both) */
+form .lva-bounce-config { display: none; }
+form.lva-bounce-on .lva-bounce-config { display: block; }
+
+/* Outline sub-settings: hidden unless the outline is enabled */
+form .lva-outline-only { display: none; }
+form.lva-outline-on .lva-outline-only { display: flex; }
+
+/* Avatar outline sub-settings: shown only when the avatar outline is enabled */
+form .lva-avatar-outline-only { display: none; }
+form.lva-avatar-outline-on .lva-avatar-outline-only { display: flex; }
+
+/* Outline configs side by side and decoupled — both always apply per head:
+   portrait/viseme outline is always active (viseme & token heads always exist);
+   the avatar outline is only relevant when Prefer Avatar Image is on, so it is
+   dimmed/disabled while that toggle is off. */
+.lva-outline-columns {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+.lva-outline-columns > .lva-outline-col {
+  flex: 1 1 0;
+  min-width: 0;
+}
+form:not(.lva-avatar-on) .lva-outline-col--avatar {
+  opacity: 0.4;
+}
+form:not(.lva-avatar-on) .lva-outline-col--avatar :is(input, select, button) {
+  pointer-events: none;
+}
+
+/* ── Video Window Animator ──────────────────────────────────────────
+   These rules target Foundry's built-in AV camera tiles.
+   Tile structure (v14): .camera-view[data-user] > .video-container > img.user-avatar
+                                                                     > video.user-camera
+   IF FOUNDRY CHANGES THE AV TILE STRUCTURE, UPDATE:
+     - .lva-video-frame positioning (depends on .video-container layout)
+     - .camera-view.lva-video-animated (depends on .camera-view having overflow:hidden)
+     - Clean-mode selectors (depend on .player-name, .notification-bar, .control-bar, .volume-bar)
+   ────────────────────────────────────────────────────────────────── */
+
+/* Allow bounce/scale transforms to pop outside the tile boundary.
+   Foundry's .camera-view uses overflow:hidden + border-radius:5px to clip
+   content to rounded corners. We override that on animated tiles so the
+   portrait can extend slightly outside — the ::after border ring still
+   visually frames the tile since it is a positioned overlay, not clipped.
+   The .video-container override is also required because it is a separate
+   stacking context that would otherwise clip its children first. */
+.camera-view.lva-video-animated,
+.camera-view.lva-video-animated .video-container {
+  overflow: visible;
+}
+
+/* Hide the native static portrait behind our animated frame.
+   We use visibility:hidden (not display:none) so the portrait still
+   participates in layout and sets the container height for 4:3 sizing. */
+.camera-view.lva-video-animated .user-avatar {
+  visibility: hidden;
+}
+
+/* The animated portrait frame. Positioned absolute to fill .video-container
+   exactly — same bounding box as the .user-avatar image. z-index:1 ensures
+   it sits above the ::after inset-shadow pseudo-element of .video-container. */
+.lva-video-frame {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  will-change: transform;
+  transform-origin: center center;
+  pointer-events: none;
+}
+
+.lva-video-frame .lva-head-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Speaking glow — subtly pulses the tile border while the speaker is active.
+   Mirrors the Foundry .speaking::after ring but using the module's lva-video-speaking
+   class so it does not conflict with Foundry's own WebRTC VAD detection. */
+.camera-view.lva-video-speaking::after {
+  border: 2px solid rgba(255, 140, 60, 0.75);
+  box-shadow: 0 0 8px rgba(255, 140, 60, 0.4);
+}
+
+/* ── Clean mode — hide AV chrome elements ───────────────────────── */
+
+.camera-view.lva-clean-name .player-name         { display: none !important; }
+.camera-view.lva-clean-status .notification-bar  { display: none !important; }
+.camera-view.lva-clean-controls .control-bar     { display: none !important; }
+.camera-view.lva-clean-volume .volume-bar        { display: none !important; }
+
+/* Hide the tile border/speaking ring (Foundry's ::after inset overlay).
+   Applies in both normal and minimized mode since ::after handles both. */
+.camera-view.lva-clean-border::after             { display: none !important; }
+
+/* ── Minimized mode — circular clip + smaller portrait ──────────── */
+
+/* In minimized mode Foundry makes tiles circular (border-radius:100%). Our
+   lva-video-animated override sets overflow:visible so the bounce can pop out,
+   but that also breaks the circular clip. Fix: inset the frame slightly so the
+   portrait sits inside the circular tile boundary, and clip the image itself. */
+#camera-views.minimized .camera-view.lva-video-animated .lva-video-frame {
+  inset: 10%;
+}
+#camera-views.minimized .camera-view.lva-video-animated .lva-video-frame .lva-head-img {
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* ── Video Window Config sub-app ────────────────────────────────── */
+
+#live-actors-video-config .window-content {
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+#live-actors-video-config .lva-video-config {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+#live-actors-video-config .lva-video-config .sheet-footer {
+  position: sticky;
+  bottom: 0;
+  padding-top: 0.5rem;
+  margin-top: auto;
+  justify-content: flex-end;
+  z-index: 1;
+}
+
+#live-actors-video-config .lva-video-config fieldset {
+  border: 1px solid var(--color-border-light-tertiary, #ccc);
+  border-radius: 4px;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem 0.75rem 0.25rem;
+}
+
+#live-actors-video-config .lva-video-config fieldset legend {
+  font-weight: bold;
+  font-size: 0.8em;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-light-6, #888);
+  padding: 0 0.25rem;
+}
+
+#live-actors-video-config .lva-video-config .range-value {
+  flex: 0 0 4ch;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.85em;
+}

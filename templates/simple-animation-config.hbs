@@ -1,0 +1,54 @@
+<form class="lva-simple-config standard-form {{#if showBounce}}lva-bounce-on{{/if}}" autocomplete="off">
+
+  <fieldset>
+    <legend>Animation Mode</legend>
+    <div class="form-group slim">
+      <label>Mode</label>
+      <div class="form-fields">
+        <select name="mode">
+          {{#each modeOptions}}
+          <option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+          {{/each}}
+        </select>
+      </div>
+      <p class="hint">None: no animation. Simple: bounce/wobble. Advanced: viseme lip-sync. Hybrid: visemes when sprites found, bounce otherwise.</p>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Speaking Indicator</legend>
+    <div class="form-group slim">
+      <label>Style</label>
+      <div class="form-fields">
+        <select name="indicatorStyle">
+          {{#each indicatorOptions}}
+          <option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+          {{/each}}
+        </select>
+      </div>
+      <p class="hint">Ring: coloured circle around the token. Bubble: animated speech bubble above it. Independent from the Talking Head indicator.</p>
+    </div>
+  </fieldset>
+
+  <fieldset class="lva-bounce-config">
+    <legend>Bounce Config</legend>
+    <div class="form-group slim">
+      <label>Preset</label>
+      <div class="form-fields">
+        <select name="bouncePreset">
+          {{#each presetOptions}}
+          <option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+          {{/each}}
+        </select>
+      </div>
+      <p class="hint">Choose a bounce style. Used when Debug mode is off. Tune preset values in scripts/animation-presets.mjs.</p>
+    </div>
+  </fieldset>
+
+  <footer class="sheet-footer flexrow">
+    <button type="button" data-action="save">
+      <i class="fas fa-save"></i> Save
+    </button>
+  </footer>
+
+</form>

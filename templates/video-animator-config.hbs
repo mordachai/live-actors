@@ -1,0 +1,77 @@
+<form class="lva-video-config standard-form {{#if showBounce}}lva-bounce-on{{/if}}" autocomplete="off">
+
+  <fieldset>
+    <legend>Animation Mode</legend>
+    <div class="form-group slim">
+      <label>Mode</label>
+      <div class="form-fields">
+        <select name="videoMode">
+          {{#each modeOptions}}
+          <option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+          {{/each}}
+        </select>
+      </div>
+      <p class="hint">None: feature disabled. Simple: bounce/wobble. Advanced: viseme lip-sync. Hybrid: visemes when sprites found, bounce otherwise. — Requires Foundry A/V enabled (not Disabled mode).</p>
+    </div>
+  </fieldset>
+
+  <fieldset class="lva-bounce-config">
+    <legend>Bounce Preset</legend>
+    <div class="form-group slim">
+      <label>Preset</label>
+      <div class="form-fields">
+        <select name="videoBouncePreset">
+          {{#each presetOptions}}
+          <option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+          {{/each}}
+        </select>
+      </div>
+      <p class="hint">Choose a bounce style. Used when Debug mode is off. Values are tuned for the smaller AV tile scale — tune presets in scripts/animation-presets.mjs (VIDEO_BOUNCE_PRESETS).</p>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Clean Mode — hide A/V chrome</legend>
+    <p class="hint" style="margin:0 0 0.5rem">Each option hides a UI element from all camera tiles. Applied per-client so each player can configure their own view. Requires Foundry A/V to be enabled.</p>
+    <div class="form-group slim">
+      <label>Hide player names</label>
+      <div class="form-fields">
+        <input type="checkbox" name="cleanName" {{#if cleanName}}checked{{/if}}>
+      </div>
+    </div>
+    <div class="form-group slim">
+      <label>Hide status icons</label>
+      <div class="form-fields">
+        <input type="checkbox" name="cleanStatus" {{#if cleanStatus}}checked{{/if}}>
+      </div>
+      <p class="hint">Camera-off and mic-muted indicator icons.</p>
+    </div>
+    <div class="form-group slim">
+      <label>Hide control buttons</label>
+      <div class="form-fields">
+        <input type="checkbox" name="cleanControls" {{#if cleanControls}}checked{{/if}}>
+      </div>
+      <p class="hint">Block video/audio and hide-user buttons (visible on hover).</p>
+    </div>
+    <div class="form-group slim">
+      <label>Hide volume slider</label>
+      <div class="form-fields">
+        <input type="checkbox" name="cleanVolume" {{#if cleanVolume}}checked{{/if}}>
+      </div>
+    </div>
+    <div class="form-group slim">
+      <label>Hide border ring</label>
+      <div class="form-fields">
+        <input type="checkbox" name="cleanBorder" {{#if cleanBorder}}checked{{/if}}>
+      </div>
+      <p class="hint">Hides the colored border/speaking ring on camera tiles (both normal and minimized mode).</p>
+    </div>
+  </fieldset>
+
+  <footer class="sheet-footer flexrow">
+    <button type="button" data-action="save">
+      <i class="fas fa-save"></i> Save
+    </button>
+  </footer>
+
+</form>
