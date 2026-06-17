@@ -45,7 +45,7 @@ function registerSettings() {
     scope: "client",
     config: true,
     type: Number,
-    default: 50,
+    default: 20,
     range: { min: 0, max: 100, step: 1 },
   });
 
@@ -66,7 +66,7 @@ function registerSettings() {
     scope: "world",
     config: true,
     type: Boolean,
-    default: false,
+    default: true,
     // reset:true forces SceneControls to re-run getSceneControlButtons so the
     // tool is added/removed immediately — a plain render() only refreshes the
     // active state of existing tools, so the button needed a world reload.
@@ -82,7 +82,7 @@ function registerSettings() {
     scope: "world",
     config: false,
     type: String,
-    default: "speaking",
+    default: "always",
     onChange: () => TalkingHeads.rebuild(),
   });
 
@@ -107,34 +107,34 @@ function registerSettings() {
   // ── Hidden — bounce presets (managed by config submenus) ─
 
   game.settings.register("live-actors", "bouncePreset",     { scope: "world", config: false, type: String,  default: "bouncy" });
-  game.settings.register("live-actors", "headBouncePreset", { scope: "world", config: false, type: String,  default: "bouncy" });
-  game.settings.register("live-actors", "videoBouncePreset",{ scope: "world", config: false, type: String,  default: "bouncy" });
+  game.settings.register("live-actors", "headBouncePreset", { scope: "world", config: false, type: String,  default: "toon" });
+  game.settings.register("live-actors", "videoBouncePreset",{ scope: "world", config: false, type: String,  default: "pulse" });
 
   // ── Hidden — managed by Token Animation Config submenu (GM only) ─
 
-  game.settings.register("live-actors", "indicatorStyle", { scope: "world", config: false, type: String, default: "ring" });
-  game.settings.register("live-actors", "mode",         { scope: "world",  config: false, type: String, default: "simple", onChange: () => CanvasAnimator.onModeChange() });
-  game.settings.register("live-actors", "intensity",    { scope: "world",  config: false, type: Number, default: 1.0  });
+  game.settings.register("live-actors", "indicatorStyle", { scope: "world", config: false, type: String, default: "bubble" });
+  game.settings.register("live-actors", "mode",         { scope: "world",  config: false, type: String, default: "none", onChange: () => CanvasAnimator.onModeChange() });
+  game.settings.register("live-actors", "intensity",    { scope: "world",  config: false, type: Number, default: 2.0  });
   game.settings.register("live-actors", "bounceMax",    { scope: "world",  config: false, type: Number, default: 8    });
-  game.settings.register("live-actors", "angleMax",     { scope: "world",  config: false, type: Number, default: 5    });
+  game.settings.register("live-actors", "angleMax",     { scope: "world",  config: false, type: Number, default: 2    });
   game.settings.register("live-actors", "scaleAxis",    { scope: "world",  config: false, type: String, default: "xy" });
   game.settings.register("live-actors", "scaleLow",     { scope: "world",  config: false, type: Number, default: 1.0  });
-  game.settings.register("live-actors", "scaleHigh",    { scope: "world",  config: false, type: Number, default: 1.15 });
-  game.settings.register("live-actors", "scaleDamping", { scope: "world",  config: false, type: Number, default: 0.7  });
+  game.settings.register("live-actors", "scaleHigh",    { scope: "world",  config: false, type: Number, default: 1.10 });
+  game.settings.register("live-actors", "scaleDamping", { scope: "world",  config: false, type: Number, default: 0.88 });
 
   // ── Hidden — managed by Talking Heads Config submenu (world = GM-controlled for all) ──
 
-  game.settings.register("live-actors", "headIndicatorStyle", { scope: "world", config: false, type: String, default: "ring" });
-  game.settings.register("live-actors", "headWidth",        { scope: "world",  config: false, type: Number, default: 100,      onChange: () => TalkingHeads.rebuild() });
+  game.settings.register("live-actors", "headIndicatorStyle", { scope: "world", config: false, type: String, default: "none" });
+  game.settings.register("live-actors", "headWidth",        { scope: "world",  config: false, type: Number, default: 260,      onChange: () => TalkingHeads.rebuild() });
   game.settings.register("live-actors", "headAspectRatio",  { scope: "world",  config: false, type: Boolean, default: false,  onChange: () => TalkingHeads.rebuild() });
   game.settings.register("live-actors", "showHeadName",     { scope: "world",  config: false, type: Boolean, default: true,   onChange: () => TalkingHeads.rebuild() });
-  game.settings.register("live-actors", "headNameSize",     { scope: "world",  config: false, type: Number, default: 1.0,    onChange: () => TalkingHeads.rebuild() });
-  game.settings.register("live-actors", "headMode",        { scope: "world",  config: false, type: String, default: "simple", onChange: () => TalkingHeads.rebuild() });
-  game.settings.register("live-actors", "headMask",        { scope: "world",  config: false, type: String, default: "",       onChange: () => TalkingHeads.rebuild() });
+  game.settings.register("live-actors", "headNameSize",     { scope: "world",  config: false, type: Number, default: 0.8,    onChange: () => TalkingHeads.rebuild() });
+  game.settings.register("live-actors", "headMode",        { scope: "world",  config: false, type: String, default: "hybrid", onChange: () => TalkingHeads.rebuild() });
+  game.settings.register("live-actors", "headMask",        { scope: "world",  config: false, type: String, default: "modules/live-actors/assets/masks/grunge-1.webp", onChange: () => TalkingHeads.rebuild() });
   // Avatar mode: show a separate "{tokenBase}-avatar.ext" image (full-body/portrait),
   // static aspect ratio, no visemes. Decoupled from headMode (forced simple bounce).
-  game.settings.register("live-actors", "headUseAvatar",   { scope: "world",  config: false, type: Boolean, default: false,  onChange: () => TalkingHeads.rebuild() });
-  game.settings.register("live-actors", "headAvatarWidth",  { scope: "world",  config: false, type: Number, default: 240,    onChange: () => TalkingHeads.rebuild() });
+  game.settings.register("live-actors", "headUseAvatar",   { scope: "world",  config: false, type: Boolean, default: true,  onChange: () => TalkingHeads.rebuild() });
+  game.settings.register("live-actors", "headAvatarWidth",  { scope: "world",  config: false, type: Number, default: 200,    onChange: () => TalkingHeads.rebuild() });
   // Cartoon silhouette outline (Talking Heads only). Follows the alpha from the mask,
   // or — with Cutout on — the portrait PNG's own transparency.
   game.settings.register("live-actors", "headOutline",      { scope: "world",  config: false, type: Boolean, default: false,  onChange: () => TalkingHeads.rebuild() });
@@ -143,37 +143,37 @@ function registerSettings() {
   game.settings.register("live-actors", "headOutlineColor", { scope: "world",  config: false, type: String,  default: "#ffffff", onChange: () => TalkingHeads.rebuild() });
   game.settings.register("live-actors", "headCutout",       { scope: "world",  config: false, type: Boolean, default: false,  onChange: () => TalkingHeads.rebuild() });
   // Avatar mode has its own outline config (silhouette = avatar PNG alpha, so no Cutout toggle).
-  game.settings.register("live-actors", "headAvatarOutline",      { scope: "world", config: false, type: Boolean, default: false,    onChange: () => TalkingHeads.rebuild() });
-  game.settings.register("live-actors", "headAvatarOutlineWidth", { scope: "world", config: false, type: Number,  default: 3,        onChange: () => TalkingHeads.rebuild() });
-  game.settings.register("live-actors", "headAvatarOutlineAuto",  { scope: "world", config: false, type: Boolean, default: true,     onChange: () => TalkingHeads.rebuild() });
+  game.settings.register("live-actors", "headAvatarOutline",      { scope: "world", config: false, type: Boolean, default: true,    onChange: () => TalkingHeads.rebuild() });
+  game.settings.register("live-actors", "headAvatarOutlineWidth", { scope: "world", config: false, type: Number,  default: 4,        onChange: () => TalkingHeads.rebuild() });
+  game.settings.register("live-actors", "headAvatarOutlineAuto",  { scope: "world", config: false, type: Boolean, default: false,     onChange: () => TalkingHeads.rebuild() });
   game.settings.register("live-actors", "headAvatarOutlineColor", { scope: "world", config: false, type: String,  default: "#ffffff", onChange: () => TalkingHeads.rebuild() });
-  game.settings.register("live-actors", "headBounceMax",    { scope: "world",  config: false, type: Number, default: 10   });
-  game.settings.register("live-actors", "headAngleMax",     { scope: "world",  config: false, type: Number, default: 5    });
-  game.settings.register("live-actors", "headScaleAxis",    { scope: "world",  config: false, type: String, default: "xy" });
+  game.settings.register("live-actors", "headBounceMax",    { scope: "world",  config: false, type: Number, default: 5    });
+  game.settings.register("live-actors", "headAngleMax",     { scope: "world",  config: false, type: Number, default: 12   });
+  game.settings.register("live-actors", "headScaleAxis",    { scope: "world",  config: false, type: String, default: "y"  });
   game.settings.register("live-actors", "headScaleLow",     { scope: "world",  config: false, type: Number, default: 1.0  });
-  game.settings.register("live-actors", "headScaleHigh",    { scope: "world",  config: false, type: Number, default: 1.08 });
-  game.settings.register("live-actors", "headScaleDamping", { scope: "world",  config: false, type: Number, default: 0.7  });
-  game.settings.register("live-actors", "headIntensity",    { scope: "world",  config: false, type: Number, default: 1.0  });
+  game.settings.register("live-actors", "headScaleHigh",    { scope: "world",  config: false, type: Number, default: 1.4  });
+  game.settings.register("live-actors", "headScaleDamping", { scope: "world",  config: false, type: Number, default: 0.88 });
+  game.settings.register("live-actors", "headIntensity",    { scope: "world",  config: false, type: Number, default: 3.4  });
   game.settings.register("live-actors", "headMirrorMap",    { scope: "world",  config: false, type: Object, default: {}   });
 
   // ── Hidden — managed by Video Window Config submenu (world = all clients animate identically) ──
   // All video* settings hint: requires Foundry A/V enabled (not Disabled mode).
 
-  game.settings.register("live-actors", "videoMode",        { scope: "world",  config: false, type: String,  default: "none",   onChange: () => VideoAnimator._scanAll() });
-  game.settings.register("live-actors", "videoBounceMax",   { scope: "world",  config: false, type: Number,  default: 3    });
-  game.settings.register("live-actors", "videoAngleMax",    { scope: "world",  config: false, type: Number,  default: 1    });
+  game.settings.register("live-actors", "videoMode",        { scope: "world",  config: false, type: String,  default: "hybrid", onChange: () => VideoAnimator._scanAll() });
+  game.settings.register("live-actors", "videoBounceMax",   { scope: "world",  config: false, type: Number,  default: 1    });
+  game.settings.register("live-actors", "videoAngleMax",    { scope: "world",  config: false, type: Number,  default: 0    });
   game.settings.register("live-actors", "videoScaleAxis",   { scope: "world",  config: false, type: String,  default: "xy" });
   game.settings.register("live-actors", "videoScaleLow",    { scope: "world",  config: false, type: Number,  default: 1.0  });
-  game.settings.register("live-actors", "videoScaleHigh",   { scope: "world",  config: false, type: Number,  default: 1.06 });
+  game.settings.register("live-actors", "videoScaleHigh",   { scope: "world",  config: false, type: Number,  default: 1.05 });
   game.settings.register("live-actors", "videoIntensity",   { scope: "world",  config: false, type: Number,  default: 1.5  });
-  game.settings.register("live-actors", "videoScaleDamping",{ scope: "world",  config: false, type: Number,  default: 0.88 });
+  game.settings.register("live-actors", "videoScaleDamping",{ scope: "world",  config: false, type: Number,  default: 0.92 });
 
   // Clean mode — client-scoped so each player controls their own AV chrome visibility.
   game.settings.register("live-actors", "videoCleanName",     { scope: "client", config: false, type: Boolean, default: false, onChange: () => VideoAnimator._scanAll() });
   game.settings.register("live-actors", "videoCleanStatus",   { scope: "client", config: false, type: Boolean, default: false, onChange: () => VideoAnimator._scanAll() });
   game.settings.register("live-actors", "videoCleanControls", { scope: "client", config: false, type: Boolean, default: false, onChange: () => VideoAnimator._scanAll() });
   game.settings.register("live-actors", "videoCleanVolume",   { scope: "client", config: false, type: Boolean, default: false, onChange: () => VideoAnimator._scanAll() });
-  game.settings.register("live-actors", "videoCleanBorder",   { scope: "client", config: false, type: Boolean, default: false, onChange: () => VideoAnimator._scanAll() });
+  game.settings.register("live-actors", "videoCleanBorder",   { scope: "client", config: false, type: Boolean, default: true, onChange: () => VideoAnimator._scanAll() });
 
   // ── Hidden — managed by scene control toggle button ───────────
 
@@ -193,7 +193,7 @@ function registerSettings() {
     scope: "world",
     config: true,
     type: Boolean,
-    default: false,
+    default: true,
     onChange: () => _applyCombatState(),
   });
 
