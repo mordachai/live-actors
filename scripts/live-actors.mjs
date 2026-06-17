@@ -67,7 +67,10 @@ function registerSettings() {
     config: true,
     type: Boolean,
     default: false,
-    onChange: () => ui.controls.render(),
+    // reset:true forces SceneControls to re-run getSceneControlButtons so the
+    // tool is added/removed immediately — a plain render() only refreshes the
+    // active state of existing tools, so the button needed a world reload.
+    onChange: () => ui.controls.render({ reset: true }),
   });
 
   // ── Talking Heads ──────────────────────────────────────────────
@@ -233,19 +236,8 @@ Hooks.on("getSceneControlButtons", controls => {
     };
   }
 
-  controls.tokens.tools["live-actors-video-config"] = {
-    name:     "live-actors-video-config",
-    title:    "Live Actors: Video Window",
-    icon:     "fas fa-camera-web",
-    button:   true,
-    onChange: () => {
-      if (foundry.applications.instances.get("live-actors-video-config")?.rendered) {
-        foundry.applications.instances.get("live-actors-video-config").close();
-      } else {
-        new VideoAnimatorConfig().render({ force: true });
-      }
-    },
-  };
+  // Video Window config is reachable from the module Settings menu
+  // (registerMenu "videoAnimConfig"); no scene-control button to avoid clutter.
 });
 
 Hooks.on("canvasReady", () => {
