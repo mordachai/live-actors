@@ -5,36 +5,52 @@
 
 Live Actors listens to your microphone and animates the speaking player in real time. It can animate three places at once, each on its own:
 
-- **Token** — Animates your actual token on the canvas with lip-sync or just some speach indicators.
-- **Video** — Display the lip-sync and/or animation on the Audio/Video camera of Foundry when the camera is off. No need to run audio through Foundry, just let it pick the mic in the browser.
-- **Avatar** — a floating "Talking Head" portrait on screen, use this if you dont want to use the camera area.
-
-Everything runs peer-to-peer over Foundry's socket — no database writes, no server round-trip.
-
-### IMPORTANT, PAY ATTENTION:
-
-
-**Your browser will ask you for microphone access permissions. Allow it, even if you are not using audio through Foundry:**
-
-<img width="338" height="488" alt="image" src="https://github.com/user-attachments/assets/b4ac9eb7-bcd9-4c0f-a9d2-abceddd97b1c" />
-
----
-
-**If you are using Foundry Audio on your game remind everyone at the table that they must config the audio to Always Enable or at least press the key to talk...**
-
-<img width="606" height="418" alt="image" src="https://github.com/user-attachments/assets/a5b8f6c7-8c5a-4316-9c01-3095c57216fd" />
-
----
-
 ## Contents
 
+- **[Quickstart](#quickstart)**
 - [Animation Modes & Places](#animation-modes--places)
 - [Speaker Indicators](#speaker-indicators)
 - [Viseme Images (lip-sync)](#viseme-images-lip-sync)
+- **[Making the visemes](#making-the-visemes)**
 - [Masks & Cartoon Outline](#masks--cartoon-outline)
 - [Settings](#settings)
 - [Installation](#installation)
-- [License](#license)
+
+---
+
+- **Token** — Animates your actual token on the canvas with lip-sync or just some speech indicators.
+- **Video** — Display the lip-sync and/or animation on the Audio/Video camera of Foundry when the camera is off. No need to run audio through Foundry, just let it pick the mic in the browser.
+- **Avatar** — a floating "Talking Head" portrait on screen, use this if you don't want to use the camera area.
+
+Everything runs peer-to-peer over Foundry's socket — no database writes, no server round-trip.
+
+## Quickstart
+
+1. **Install & enable** the module, reload the world.
+2. **Allow microphone access** when the browser asks — required even if you don't run audio through Foundry. Without it nothing animates.
+
+   <img width="338" alt="mic permission prompt" src="https://github.com/user-attachments/assets/b4ac9eb7-bcd9-4c0f-a9d2-abceddd97b1c" />
+
+3. **Using Foundry A/V?** Tell everyone to set their voice to *Always Enabled* (or hold the push-to-talk key). A muted mic = no animation.
+4. **Pick where to animate** — Token, Video tile, Avatar (Talking Head). Each independent, GM sets the mode per place in *Module Settings → Live Actors*.
+5. **Tune Mic Sensitivity** (per client): raise for quiet mics, lower to cut background noise.
+
+### Want lip-sync?
+
+Lip-sync needs viseme images **and** a lip-sync mode:
+
+1. Make the mouth shapes — see [Viseme Images](#viseme-images-lip-sync) and [Making the visemes](#making-the-visemes).
+2. Name them off the **token art** filename (`MyToken-sheet.webp` or `-closed/-AH/-EE/-OO`), same folder.
+3. Set the place's **Mode** to **Lip-Sync**, **Hybrid**, or **Both** in its config menu.
+
+No viseme images + a lip-sync mode = falls back to bounce or static. **Simple** and **None** never need viseme art.
+
+### Talking Head vs Avatar
+
+Same floating portrait, two image sources:
+
+- **Talking Head (default)** — uses the **token art / viseme images**. Can lip-sync.
+- **Avatar** — turn on **Prefer Avatar Image**; uses a single `-avatar` file (full-body or alternate portrait). One image, so **no lip-sync** — follows None/Simple bounce only. Chars without an `-avatar` file fall back to visemes/token art.
 
 ---
 
@@ -50,7 +66,7 @@ Each place has the same five modes. Pick a mode per place; they are independent.
 | **Hybrid** | Lip-sync where viseme images exist, bounce otherwise. | Optional |
 | **Both** | Visemes **and** bounce together. | Yes |
 
-The effective mode is decided per token: no viseme images in a Lip-Sync/Hybrid/Both world just falls back to bounce or static.
+The effective mode is decided per token: no viseme images in a Lip-Sync/Hybrid/Both setting just falls back to bounce or static.
 
 ---
 
@@ -115,7 +131,7 @@ A floating portrait on screen, placed by the GM.
 - **Size**, **Keep Aspect Ratio**, **Show Name** / size.
 - **Mirror** (per player) — face inward.
 - **Portrait Mask**, **Cartoon Outline** + speaking glow.
-- **Prefer Avatar Image** — use a `-avatar` file instead of visemes/token art. Chars without avatar fallback to visemes or just token images if they dont have any.
+- **Prefer Avatar Image** — use a `-avatar` file instead of visemes/token art. Chars without avatar fallback to visemes or just token images if they don't have any.
 
 *Config: Talking Heads Config. GM drags each head; positions save per scene.*
 
@@ -152,9 +168,9 @@ This is the key rule: **the suffixed files must match the filename of the token 
 
 Two ways to supply the four shapes. Choose just one per character, but you can use them together in the same game without issues:
 
-**A — Flipbook (recommended):** one image, a 2×2 grid, **-sheet** suffix.
+**A — Flipbook:** one image, a 2×2 grid, **-sheet** suffix.
 
-Position of the images matter
+Position of the images matters:
 
 <img width="512" height="512" alt="goblin-sheet" src="https://github.com/user-attachments/assets/0df95dbc-6209-4c8a-b7d1-bc622765a686" />
 
@@ -182,6 +198,7 @@ Katrina_token-AH.webp        ← open A / O
 Katrina_token-EE.webp        ← E / I / EE
 Katrina_token-OO.webp        ← OO / W / U
 ```
+
 > **Optional `-mask`** (`Katrina_token-mask.webp`) — a greyscale image; white = visible, black = transparent, grey = partial. Clips the token to any shape. One single mask per token (not a sheet of masks); it's applied after a frame is sliced from the sheet.
 
 > **Optional `-avatar`** (`Katrina_token-avatar.webp`) — a single full-body / alternate portrait for Talking Heads. Same naming rule: matches the **token** filename. It's one image, so it can't lip-sync (follows None/Simple). Used when *Prefer Avatar Image* is on.
@@ -192,15 +209,15 @@ Katrina_token-OO.webp        ← OO / W / U
 
 #### Without AI
 
-Four mouth images at the same size, aligned by the eyes and top of the head. If you export as separate images from you prefered application it will be easy for you to keep them aligned. Softawres like Characer Animator and Unreal Metahuman can give you awesome results using 3D. Or just go crazy and do _Robot Chicken_ / _South Park_ mouths its a lot of fun!
+Four mouth images at the same size, aligned by the eyes and top of the head. If you export as separate images from your preferred application it will be easy to keep them aligned. Software like Character Animator and Unreal Metahuman can give you awesome results using 3D. Or just go crazy and do _Robot Chicken_ / _South Park_ mouths — it's a lot of fun!
 
 <img width="909" height="236" alt="image" src="https://github.com/user-attachments/assets/ca4cef44-9e95-437e-b146-105afcadb623" />
 
 ---
 
-#### With AI — two prompts. 
+#### With AI: Use two prompts
 
-First lock-in the style you want:, after that build the sheet. Examples:
+First lock-in the style you want, after that build the sheet. Examples:
 
 ###### CREATION PROMPT: 
 
@@ -215,21 +232,21 @@ _From this image create 4 visemes for the mouth in a 2 by 2 spritesheet: Closed 
 
 <img width="512" height="512" alt="Sylvie_token-sheet" src="https://github.com/user-attachments/assets/32f68894-c22e-4719-8c59-94231b27667d" />
 
-After the first character you can keep reusing
+After the first character you can keep producing images easily:
 
 ###### FOLLOW-UP PROMPT:
 
-_do the same spritesheet, for a **Dwarven Fighter with a warhammer"**_
+_do the same spritesheet, for a **Dwarven Fighter with a warhammer**_
 
 <img width="512" height="512" alt="Krotnik-sheet" src="https://github.com/user-attachments/assets/1c72ef9e-3e5e-4247-9d18-808869c965f3" />
 
-gives fast matching results. Try it!
+Fast matching results. Try it!
 
 ---
 
 ## Masks & Cartoon Outline
 
-### Mask — clip the art to a shape
+### Mask: clip the art to a shape
 
 - Luminance stencil (black & white): **white = opaque, black = transparent, grey = partial.**
 - **For token usage:** a `-mask` file (`Katrina_token-mask.webp`).
@@ -245,7 +262,7 @@ _Avatar with outline and with player color outline + ring speaker animation_
 
 - Outline around the silhouette,
 - Two independent outlines: **Portrait / Viseme** and **Avatar**.
-- You can set the thickness (width) of both indenpendently.
+- You can set the thickness (width) of both independently.
 - Player Colour: it will assume the user color defined in Foundry User Configuration for each player. NPCs will pick GM Colour.
 - Using a Ring speak indicator will make it glow with the user color when speaking.
 
@@ -263,7 +280,7 @@ _Avatar with outline and with player color outline + ring speaker animation_
 | **Talking Heads Config** | Avatar visibility, size, mask, mirror, outline, avatar image, mode, bounce preset. |
 | **Video Window Config** | Video tile mode, clean mode, bounce preset. |
 | **Mic Sensitivity** | Raise for quiet mics, lower to cut background noise. |
-| **Speaker Widget** | GM toolbar button to speak through NPC tokens. Surpass selection. |
+| **Speaker Widget** | GM toolbar button to speak through NPC tokens. Overrides the current token selection. |
 | **Pause During Encounters** | Auto-disable while a combat encounter is active on the scene. |
 | **Disable Live Actors** | Kills all mic/animation on this client. Per user setting. |
 
