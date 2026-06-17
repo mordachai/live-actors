@@ -53,7 +53,7 @@ export class VideoAnimatorConfig extends HandlebarsApplicationMixin(ApplicationV
       modeOptions: [
         { value: "none",     label: "None (Disabled)",            selected: videoMode === "none"     },
         { value: "simple",   label: "Simple (Bounce)",            selected: videoMode === "simple"   },
-        { value: "advanced", label: "Advanced (Visemes)",         selected: videoMode === "advanced" },
+        { value: "advanced", label: "Lip-Sync (Visemes)",         selected: videoMode === "advanced" },
         { value: "hybrid",   label: "Hybrid (Visemes or Bounce)", selected: videoMode === "hybrid"   },
         { value: "both",     label: "Both (Visemes + Bounce)",    selected: videoMode === "both"     },
       ],

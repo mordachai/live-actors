@@ -32,11 +32,11 @@ Each place has the same five modes. Pick a mode per place; they are independent.
 | --- | --- | --- |
 | **None** | No animation. | No |
 | **Simple** | Bounce, wobble, stretch. | No |
-| **Advanced** | Lip-sync — voice maps to mouth shapes, swaps the image live. | Yes |
+| **Lip-Sync** | Voice maps to mouth shapes, swaps the image live. | Yes |
 | **Hybrid** | Lip-sync where viseme images exist, bounce otherwise. | Optional |
 | **Both** | Visemes **and** bounce together. | Yes |
 
-The effective mode is decided per token: no viseme images in an Advanced/Hybrid/Both world just falls back to bounce or static.
+The effective mode is decided per token: no viseme images in a Lip-Sync/Hybrid/Both world just falls back to bounce or static.
 
 ---
 
@@ -74,7 +74,7 @@ Each place has its own config menu and its own bounce preset. Tune them separate
 
 The token on the canvas.
 
-- **Mode** — None / Simple / Advanced / Hybrid / Both.
+- **Mode** — None / Simple / Lip-Sync / Hybrid / Both.
 - **Indicator** — Ring / Bubble (see below).
 - **Bounce Preset** — ready-made simple-animation feel.
 - **Luminance Mask** — clips the token to a shape (`-mask`).
@@ -86,7 +86,7 @@ The token on the canvas.
 
 The A/V camera tile, only while the camera feed is off.
 
-- **Mode** — None / Simple / Advanced / Hybrid / Both.
+- **Mode** — None / Simple / Lip-Sync / Hybrid / Both.
 - **Bounce Preset** — separate from the token's.
 - **Clean Mode** — hide Foundry's A/V chrome: name, status, controls, volume, border (each toggle, per client).
 
@@ -97,7 +97,7 @@ The A/V camera tile, only while the camera feed is off.
 
 A floating portrait on screen, placed by the GM.
 
-- **Mode** — None / Simple / Advanced / Hybrid / Both.
+- **Mode** — None / Simple / Lip-Sync / Hybrid / Both.
 - **Always Visible** — stay up vs. fade in only while talking.
 - **Size**, **Keep Aspect Ratio**, **Show Name** / size.
 - **Mirror** (per player) — face inward.
@@ -120,7 +120,7 @@ A floating portrait on screen, placed by the GM.
 
 Watch any cartoon character talk and you'll notice the mouth never draws every letter — it snaps between a handful of poses. Those poses are **visemes** (*visual phonemes*): the few mouth shapes that cover all the sounds of speech. Animators have used this trick for decades, because many sounds look identical on the lips — *p*, *b* and *m* are the same closed mouth — so a whole sentence collapses into just a few drawings, swapped in time with the voice. Your brain fills in the rest.
 
-Live Actors does this automatically. In **Advanced / Hybrid / Both** it listens to your mic and picks the matching shape, frame by frame, while you talk. You supply four drawings; it plays them like a flipbook:
+Live Actors does this automatically. In **Lip-Sync / Hybrid / Both** it listens to your mic and picks the matching shape, frame by frame, while you talk. You supply four drawings; it plays them like a flipbook:
 
 | Shape | Sounds | Example |
 | --- | --- | --- |

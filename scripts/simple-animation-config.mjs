@@ -32,7 +32,7 @@ export class SimpleAnimationConfig extends HandlebarsApplicationMixin(Applicatio
       modeOptions: [
         { value: "none",     label: "None (Disabled)",            selected: mode === "none"     },
         { value: "simple",   label: "Simple (Bounce)",            selected: mode === "simple"   },
-        { value: "advanced", label: "Advanced (Visemes)",         selected: mode === "advanced" },
+        { value: "advanced", label: "Lip-Sync (Visemes)",         selected: mode === "advanced" },
         { value: "hybrid",   label: "Hybrid (Visemes or Bounce)", selected: mode === "hybrid"   },
         { value: "both",     label: "Both (Visemes + Bounce)",    selected: mode === "both"     },
       ],
