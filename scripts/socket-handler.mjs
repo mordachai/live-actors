@@ -20,6 +20,10 @@ export class SocketHandler {
         TalkingHeads.receiveSharedHeadImages(data.userId, data);
         return;
       }
+      if (data.type === "headAvatar") {
+        TalkingHeads.receiveSharedAvatar(data.userId, data.hasAvatar);
+        return;
+      }
       if (data.type === "videoAssets") {
         VideoAnimator.receiveSharedTileImages(data.userId, data);
         return;

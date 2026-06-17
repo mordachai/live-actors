@@ -15,6 +15,9 @@ export class TalkingHeads {
   // Images broadcast by a privileged client so players can show visemes without FilePicker.
   // Keyed by userId; values are the same URL-string format as _headImages.
   static _sharedHeadImages = new Map(); // userId → { closed?, oo?, ah?, ee? }
+  // Avatar existence broadcast by a privileged client so players don't HEAD-probe
+  // (no 404 noise). Keyed by userId → Boolean.
+  static _sharedAvatar     = new Map();
 
   // Animation state
   static _targets         = new Map(); // userId → state { mode, volume, viseme? }
@@ -105,10 +108,22 @@ export class TalkingHeads {
 
     // Per-head avatar detection (once, at build): which heads have a "-avatar"
     // sibling. Heads without one fall back to the portrait/viseme pipeline.
+    // Socket-first (mirrors viseme discovery): only a privileged client browses the
+    // directory, then broadcasts the result; players read the cache — no HEAD probes,
+    // no 404 noise. A late-arriving broadcast triggers a rebuild (receiveSharedAvatar).
     if (useAvatar) {
-      await Promise.all(speakers.map(async info => {
-        info.hasAvatar = await TalkingHeads._hasAvatarFile(info.img);
-      }));
+      const canBrowse = game.user.isGM || game.user.role >= CONST.USER_ROLES.ASSISTANT;
+      if (canBrowse) {
+        await Promise.all(speakers.map(async info => {
+          info.hasAvatar = await TalkingHeads._hasAvatarFile(info.img);
+          TalkingHeads._sharedAvatar.set(info.userId, info.hasAvatar);
+          game.socket.emit(SOCKET_EVENT, { type: "headAvatar", userId: info.userId, hasAvatar: info.hasAvatar });
+        }));
+      } else {
+        speakers.forEach(info => {
+          info.hasAvatar = TalkingHeads._sharedAvatar.get(info.userId) === true;
+        });
+      }
     }
 
     speakers.forEach((info, idx) => {
@@ -122,8 +137,9 @@ export class TalkingHeads {
     });
   }
 
-  // Does a "{base}-avatar" sibling exist for this image? GM lists the directory
-  // (no 404 noise); players HEAD-probe. Result drives per-head avatar vs fallback.
+  // Does a "{base}-avatar" sibling exist for this image? Privileged-client only:
+  // lists the directory (no 404 noise). Players never call this — they get the
+  // result via the headAvatar socket broadcast (see rebuild / receiveSharedAvatar).
   static async _hasAvatarFile(imgPath) {
     const q         = imgPath.indexOf("?");
     const clean     = q >= 0 ? imgPath.slice(0, q) : imgPath;
@@ -134,17 +150,25 @@ export class TalkingHeads {
     const base      = lastDot >= 0 ? filename.slice(0, lastDot) : filename;
 
     try {
-      // GM: directory listing — matches "-avatar" regardless of extension/case.
+      // Directory listing — matches "-avatar" regardless of extension/case.
       const result = await foundry.applications.apps.FilePicker.implementation.browse("data", folder || "/");
       const files = result.files ?? [];
       const re = new RegExp(`^${_escRegex(base)}-avatar\\.[^.]+$`, "i");
       return files.some(f => re.test(f.includes("/") ? f.slice(f.lastIndexOf("/") + 1) : f));
-    } catch { /* no FILES_BROWSE permission — HEAD probe the same-ext guess instead */ }
+    } catch { return false; /* no FILES_BROWSE permission — result arrives via socket */ }
+  }
 
-    const avatarPath = TalkingHeads._avatarPath(imgPath);
-    const url = _route(avatarPath);
-    try { return (await fetch(url, { method: "HEAD" })).ok; }
-    catch { return false; }
+  // Receive avatar existence broadcast by a privileged client. Cache it so the next
+  // rebuild reads it without probing; if a head already exists and its avatar state
+  // changed, rebuild so it picks up the avatar image/outline/aspect pipeline.
+  static receiveSharedAvatar(userId, hasAvatar) {
+    TalkingHeads._sharedAvatar.set(userId, hasAvatar === true);
+    if (!game.settings.get("live-actors", "headUseAvatar")) return;
+    const head = TalkingHeads._heads.get(userId);
+    if (!head) return;
+    // Rebuild only if the head's current render disagrees with the new truth.
+    const isAvatarNow = head.classList.contains("lva-head--avatar");
+    if (isAvatarNow !== (hasAvatar === true)) TalkingHeads.rebuild();
   }
 
   // ── Speaker list ─────────────────────────────────────────────────

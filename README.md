@@ -168,31 +168,31 @@ Katrina_token-EE.webp        ← E / I / EE
 Katrina_token-OO.webp        ← OO / W / U
 ```
 
-> Use uppercase suffixes (`-AH`, `-EE`, `-OO`, `-closed`). Lowercase works but players probe files directly and throw harmless 404s. Always include `-closed` — it's the resting mouth between words; without a matching closed frame the mouth pops when speech starts.
+**Suffixes**: `-AH`, `-EE`, `-OO`, `-CLOSED`
 
-**Optional `-mask`** (`Katrina_token-mask.webp`) — a greyscale image; white = visible, black = transparent, grey = partial. Clips the token to any shape. One mask per token (not a sheet of masks); it's applied after a frame is sliced from the sheet.
+> **Optional `-mask`** (`Katrina_token-mask.webp`) — a greyscale image; white = visible, black = transparent, grey = partial. Clips the token to any shape. One single mask per token (not a sheet of masks); it's applied after a frame is sliced from the sheet.
 
-**Optional `-avatar`** (`Katrina_token-avatar.webp`) — a single full-body / alternate portrait for Talking Heads. Same naming rule: matches the **token** filename. It's one image, so it can't lip-sync (follows None/Simple). Used when *Prefer Avatar Image* is on.
+
+> **Optional `-avatar`** (`Katrina_token-avatar.webp`) — a single full-body / alternate portrait for Talking Heads. Same naming rule: matches the **token** filename. It's one image, so it can't lip-sync (follows None/Simple). Used when *Prefer Avatar Image* is on.
 
 ### Making sheets
 
-**Without AI:** four mouth images at the same size, paste into the quadrants (Closed = top-left, AH = top-right, EE = bottom-left, OO = bottom-right), export at double width × height.
+**Without AI:** four mouth images at the same size, aligned by the eyes and top of the head. Export as separate images, it will be easy for you to keep them aligned.
 
-**With AI — two prompts.** First locks the style, then builds the sheet:
-
-```
-Portrait of [subject and style] for a tabletop rpg. Square image. Transparent background. No token frame.
+**With AI — two prompts.** First lock-in the style you want, after thst builds the sheet:
 
 ```
-
-```
-From this image create 4 visemes for the mouth in a 2 by 2 spritesheet: Closed (top left), AH (top-right), EE (bottom left), OO (bottom right). Keep same position and same POV, animate only the mouth and do subtle eye animation. No text.
+Portrait of [subject, pose, and style] for a tabletop rpg. Square image. [Transparent]/[Neutral] background. No token frame. No text.
 
 ```
 
-> ChatGPT handles transparency best. After the first character, *"do the same, but a Dwarven Shopkeeper"* gives fast matching results.
+```
+From this image create 4 visemes for the mouth in a 2 by 2 spritesheet: Closed (top left), AH (top-right), EE (bottom left), OO (bottom right). Keep same pose, eye level, and same POV. Animate only the mouth and chin. Very subtle eye animation. No text.
 
-<!-- TODO: AI viseme example images -->
+```
+
+After the first character: *"do the same spritesheet, for a Dwarven Fighter with a warhammer"* gives fast matching results. Try it!
+
 
 ---
 
