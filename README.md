@@ -3,291 +3,212 @@
 [![GitHub Release](https://img.shields.io/github/v/release/mordachai/live-actors?style=flat-square)](https://github.com/mordachai/live-actors/releases/latest)
 [![Foundry VTT](https://img.shields.io/badge/Foundry%20VTT-v14%2B-orange?style=flat-square)](https://foundryvtt.com)
 
-Animate your token in real time as you speak. Live Actors listens to your microphone and animates the speaking player's canvas token and/or a floating "Talking Head" portrait. Everything runs peer-to-peer over Foundry's socket — no database writes, no server lag.
+Live Actors listens to your microphone and animates the speaking player in real time. It can animate three places at once, each on its own:
+
+- **Token** — the actual token on the canvas.
+- **Video** — the A/V camera tile, while your camera is off.
+- **Avatar** — a floating "Talking Head" portrait on screen.
+
+Everything runs peer-to-peer over Foundry's socket — no database writes, no server round-trip.
 
 ---
 
 ## Contents
 
-- [Quick Start](#quick-start)
-- [Animation Modes](#animation-modes)
-- [Two Surfaces: Tokens & Talking Heads](#two-surfaces-tokens--talking-heads)
-- [Lip-Sync: Viseme Images](#lip-sync-viseme-images)
-  - [Option A — Flipbook Spritesheet](#option-a--flipbook-spritesheet-recommended)
-  - [Option B — Individual Files](#option-b--individual-files)
-  - [Making Sheets with AI](#making-sheets-with-ai)
-- [Luminance Mask](#luminance-mask)
-- [Talking Heads](#talking-heads)
-- [Avatar Mode](#avatar-mode)
-- [Cartoon Outlines (Heads only)](#cartoon-outlines-heads-only)
-- [Speaking Indicators](#speaking-indicators)
-- [Settings Reference](#settings-reference)
+- [Animation Modes & Places](#animation-modes--places)
+- [Speaker Indicators](#speaker-indicators)
+- [Viseme Images (lip-sync)](#viseme-images-lip-sync)
+- [Settings](#settings)
 - [Installation](#installation)
+- [License](#license)
 
 ---
 
-## Quick Start
+## Animation Modes & Places
 
-1. Enable **Live Actors** in *Module Management*.
-2. Open **Module Settings → Live Actors**. Set **Mic Sensitivity** (raise for quiet mics, lower to cut background noise).
-3. Open **Token Animation Config** and/or **Talking Heads Config** to pick a mode.
-4. For lip-sync, drop viseme images next to your token art (see below). For bounce/wobble, nothing extra is needed.
-5. Talk. Your token animates automatically.
+Each place has the same five modes. Pick a mode per place; they are independent.
 
-> The GM controls all world-level animation settings, so everyone animates the same way. Only **Mic Sensitivity** and **Disable Live Actors** are per-client.
-
-<img width="177" height="533" alt="image" src="https://github.com/user-attachments/assets/6ce63415-6dee-4009-8d06-105283494a8c" />
-
----
-
-## Animation Modes
-
-Both surfaces (tokens and heads) share the same set of modes:
-
-| Mode | What it does | Needs images? |
+| Mode | What it does | Needs viseme images? |
 | --- | --- | --- |
 | **None** | No animation. | No |
-| **Simple** | Bounce, wobble and stretch. Goofy or subtle — your call. | No |
-| **Advanced** | Lip-sync. Voice → mouth shapes (OO / AH / EE / closed), swaps the image in real time. | Yes (visemes) |
-| **Hybrid** | Lip-sync when viseme images exist for that token, bounce/wobble otherwise. Best for mixed worlds. | Optional |
-| **Both** | Visemes **and** bounce at the same time. | Yes (visemes) |
+| **Simple** | Bounce, wobble, stretch. | No |
+| **Advanced** | Lip-sync — voice maps to mouth shapes, swaps the image live. | Yes |
+| **Hybrid** | Lip-sync where viseme images exist, bounce otherwise. | Optional |
+| **Both** | Visemes **and** bounce together. | Yes |
 
-The effective mode is decided **per token**: a token with no viseme images in an Advanced/Hybrid/Both world just falls back gracefully (bounce or static).
-
----
-
-## Three Surfaces: Video, Tokens & Talking Heads
-
-The same voice drives two independent layers. Enable either or both:
-
-- **Tokens** — animates the actual token on the canvas (*Token Animation Config*).
-- **Talking Heads** — a floating portrait on screen, dragged into place by the GM (*Talking Heads Config*).
-
-The two have separate mode settings and separate bounce presets — tune them independently.
-
-<img width="489" height="417" alt="image" src="https://github.com/user-attachments/assets/437d0f4a-f5bd-41b5-89d9-3dcabd08daaf" />
+The effective mode is decided per token: no viseme images in an Advanced/Hybrid/Both world just falls back to bounce or static.
 
 ---
 
-## Lip-Sync: Viseme Images
+## Speaker Indicators
 
-***Visemes** = "Visual Phonemes" — the lip/mouth shapes you make when vocalizing.*
+Set independently per place. You can have the avatar fully animate while the token only flashes a ring.
 
-Advanced / Hybrid / Both map your voice to four shapes:
+- **Ring** — coloured border in the speaking user's colour (set in *User Configuration*).
+- **Bubble** — small animated speech bubble above the token/portrait.
 
-| Shape | Sounds like | Example words |
+Each place has its own config menu and its own bounce preset. Tune them separately.
+
+<table>
+<tr>
+<th width="33%">Token</th>
+<th width="33%">Video</th>
+<th width="33%">Avatar (Talking Head)</th>
+</tr>
+<tr>
+<td valign="top">
+<!-- TODO: token example image -->
+<img alt="Token animation" src="" />
+</td>
+<td valign="top">
+<!-- TODO: video tile example image -->
+<img alt="Video tile animation" src="" />
+</td>
+<td valign="top">
+<!-- TODO: talking head example image -->
+<img alt="Talking head animation" src="" />
+</td>
+</tr>
+<tr>
+<td valign="top">
+
+The token on the canvas.
+
+- **Mode** — None / Simple / Advanced / Hybrid / Both.
+- **Indicator** — Ring / Bubble (see below).
+- **Bounce Preset** — ready-made simple-animation feel.
+- **Luminance Mask** — clips the token to a shape (`-mask`).
+
+*Config: Token Animation Config.*
+
+</td>
+<td valign="top">
+
+The A/V camera tile, only while the camera feed is off.
+
+- **Mode** — None / Simple / Advanced / Hybrid / Both.
+- **Bounce Preset** — separate from the token's.
+- **Clean Mode** — hide Foundry's A/V chrome: name, status, controls, volume, border (each toggle, per client).
+
+*Config: Video Window Config. Needs A/V enabled.*
+
+</td>
+<td valign="top">
+
+A floating portrait on screen, placed by the GM.
+
+- **Mode** — None / Simple / Advanced / Hybrid / Both.
+- **Always Visible** — stay up vs. fade in only while talking.
+- **Size**, **Keep Aspect Ratio**, **Show Name** / size.
+- **Mirror** (per player) — face inward.
+- **Portrait Mask**, **Cartoon Outline** + speaking glow.
+- **Prefer Avatar Image** — use a `-avatar` file instead of token art.
+
+*Config: Talking Heads Config. GM drags each head; positions save per scene.*
+
+</td>
+</tr>
+</table>
+
+> The GM owns all world-level animation settings, so everyone animates the same. Only **Mic Sensitivity** and **Disable Live Actors** are per-client.
+>
+> **GM through NPCs:** select any on-canvas token not owned by a player — it becomes the GM's talking head / video token. One at a time.
+
+---
+
+## Viseme Images (lip-sync)
+
+Watch any cartoon character talk and you'll notice the mouth never draws every letter — it snaps between a handful of poses. Those poses are **visemes** (*visual phonemes*): the few mouth shapes that cover all the sounds of speech. Animators have used this trick for decades, because many sounds look identical on the lips — *p*, *b* and *m* are the same closed mouth — so a whole sentence collapses into just a few drawings, swapped in time with the voice. Your brain fills in the rest.
+
+Live Actors does this automatically. In **Advanced / Hybrid / Both** it listens to your mic and picks the matching shape, frame by frame, while you talk. You supply four drawings; it plays them like a flipbook:
+
+| Shape | Sounds | Example |
 | --- | --- | --- |
-| **Closed** | M, B, P, silence | *hm*, *bump*, *lamp* |
-| **OO** | OO, W, U | *you*, *moon*, *blue* |
-| **AH** | A, O (open) | *father*, *hot*, *calm* |
-| **EE** | E, I, EE | *see*, *feel*, *green* |
+| **Closed** | M, B, P, silence | *hm*, *bump* |
+| **OO** | OO, W, U | *you*, *moon* |
+| **AH** | A, O open | *father*, *hot* |
+| **EE** | E, I, EE | *see*, *green* |
 
-The module cycles through them live as it hears you — no manual input.
+It's approximate, not a phoneme-perfect transcription — the goal is a believable moving mouth, not subtitles.
 
-You supply the four shapes in one of two ways.
+### How to name the images
 
-### Option A — Flipbook Spritesheet (recommended)
+This is the key rule: **the suffixed files must match the filename of the token image** (the image set as the token's art), because the module finds them by looking next to that file. The actor's *portrait* in the sheet can be any image you like — it's not used for discovery.
 
-One image, sliced into a 2×2 grid automatically. Detected by the `-sheet` suffix.
+So if your token art is `Katrina_token.webp`, every extra file is `Katrina_token-<suffix>.webp`, in the **same folder**.
+
+Two ways to supply the four shapes:
+
+**A — Flipbook (recommended):** one image, a 2×2 grid, `-sheet` suffix.
 
 ```text
 ┌──────────┬──────────┐
-│  CLOSED  │    AH    │  ← top row
+│  CLOSED  │    AH    │   ← top row
 ├──────────┼──────────┤
-│    EE    │    OO    │  ← bottom row
+│    EE    │    OO    │   ← bottom row
 └──────────┴──────────┘
-```
 
-Place it next to the base token, add `-sheet` before the extension:
-
-```text
-Katrina_token.webp           ← base token art
+Katrina_token.webp           ← token art (the discovery name)
 Katrina_token-sheet.webp     ← 2×2 flipbook   ← add this
 ```
 
-**Build it by hand:**
-
-1. Make four mouth images at the same size, e.g. 256×256 each.
-2. New canvas at **double width × double height** (512×512 here).
-3. Paste into quadrants: Closed = top-left, AH = top-right, EE = bottom-left, OO = bottom-right.
-4. Export `.webp` or `.png`.
-
-> **Tip:** One master portrait? Duplicate the layer four times, edit only the mouth on each, composite into the grid.
-
-### Option B — Individual Files
-
-Base token art stays untouched. Add a dedicated `-closed` frame plus the three open shapes:
+**B — Individual files:** four separate images — a dedicated `-closed` resting frame plus the three open shapes.
 
 ```text
 Katrina_token.webp           ← token art (untouched)
-Katrina_token-closed.webp    ← resting mouth
-Katrina_token-OO.webp
-Katrina_token-AH.webp
-Katrina_token-EE.webp
+Katrina_token-closed.webp    ← resting mouth (closed)
+Katrina_token-AH.webp        ← open A / O
+Katrina_token-EE.webp        ← E / I / EE
+Katrina_token-OO.webp        ← OO / W / U
 ```
 
-> **Naming:** Use uppercase suffixes (`-OO`, `-AH`, `-EE`, `-closed`). GMs browse directories so any case works, but **players** probe files directly — lowercase suffixes still work but throw harmless 404s in the console.
->
-> If no `-closed` file exists, the token's original art is used as the resting frame.
+> Use uppercase suffixes (`-AH`, `-EE`, `-OO`, `-closed`). Lowercase works but players probe files directly and throw harmless 404s. Always include `-closed` — it's the resting mouth between words; without a matching closed frame the mouth pops when speech starts.
 
-### Making Sheets with AI
+**Optional `-mask`** (`Katrina_token-mask.webp`) — a greyscale image; white = visible, black = transparent, grey = partial. Clips the token to any shape. One mask per token (not a sheet of masks); it's applied after a frame is sliced from the sheet.
 
-Two prompts. First locks the character style, then generates the sheet.
+**Optional `-avatar`** (`Katrina_token-avatar.webp`) — a single full-body / alternate portrait for Talking Heads. Same naming rule: matches the **token** filename. It's one image, so it can't lip-sync (follows None/Simple). Used when *Prefer Avatar Image* is on.
 
-**Prompt 1 — the portrait:**
+### Making sheets
+
+**Without AI:** four mouth images at the same size, paste into the quadrants (Closed = top-left, AH = top-right, EE = bottom-left, OO = bottom-right), export at double width × height.
+
+**With AI — two prompts.** First locks the style, then builds the sheet:
 
 ```text
 Portrait of [subject and style] for a tabletop rpg. Square image. Transparent background. No token frame.
 ```
 
-> ChatGPT handles transparency well; Gemini, Midjourney and Grok often don't.
-
-**Prompt 2 — the sheet:**
-
 ```text
 From this image create 4 visemes for the mouth in a 2 by 2 spritesheet: Closed (top left), AH (top-right), EE (bottom left), OO (bottom right). Keep same position and same POV, animate only the mouth and do subtle eye animation. No text.
 ```
 
-After the first character, a quick *"do the same, but now it's a Dwarven Shopkeeper"* gives fast matching results.
+> ChatGPT handles transparency best. After the first character, *"do the same, but a Dwarven Shopkeeper"* gives fast matching results.
 
-**Examples (free ChatGPT):**
-
-Prompt: *Portrait of Elf Female Wizard with white hair, acrylic painting, for a tabletop rpg. Square image. Transparent background. No token frame*
-
-<img width="512" height="512" alt="elf wizard portrait" src="https://github.com/user-attachments/assets/c42e07c4-fbe8-4a0f-936f-f04115be4345" />
-
-Prompt: *From this image create 4 visemes...*
-
-<img width="512" height="512" alt="elf wizard viseme sheet" src="https://github.com/user-attachments/assets/7e1f2858-470e-4444-a4c8-f2d3bd46dea0" />
-
-Prompt: *Keeping the same style make a spritesheet for a Dwarf Fighter armed with a hammer*
-
-<img width="512" height="512" alt="dwarf fighter viseme sheet" src="https://github.com/user-attachments/assets/b4c96bcf-4c6b-4b31-8583-d6db94916916" />
+<!-- TODO: AI viseme example images -->
 
 ---
 
-## Luminance Mask
+## Settings
 
-A mask clips your token to any shape without pre-cropping every frame. Paint it once; every viseme uses it.
+**Module Settings → Live Actors** (top-level), in panel order:
 
-<img width="696" height="360" alt="image" src="https://github.com/user-attachments/assets/5deaec34-c413-4278-835a-1868228763fb" />
+| Setting | What it does |
+| --- | --- |
+| **Mic Sensitivity** | Raise for quiet mics, lower to cut background noise. |
+| **Token Animation Config** | Token mode, indicator, bounce preset, mask. |
+| **Speaker Widget** | GM toolbar button to speak through NPC tokens. |
+| **Talking Heads Config** | Avatar visibility, size, mask, mirror, outline, avatar image, mode, bounce preset. |
+| **Video Window Config** | Video tile mode, clean mode, bounce preset. |
+| **Pause During Encounters** | Auto-disable while combat is active on the scene. |
+| **Disable Live Actors** | Kills all mic/animation on this client. |
 
-**Place it next to the base token, add `-mask`:**
-
-```text
-Katrina_token.webp           ← base token
-Katrina_token-mask.webp      ← luminance mask   ← add this
-```
-
-How it reads brightness:
-
-- **White** (255) → fully visible
-- **Black** (0) → transparent
-- **Grey** → partial, proportional to brightness
-
-Any greyscale image works — no alpha channel needed.
-
-> **One mask per token. Do NOT make a sheet of masks.** The mask is applied *after* a frame is cropped from the spritesheet.
->
-> Uses: round portrait frames, hex silhouettes, vignette fades, any non-rectangular shape.
-
----
-
-## Talking Heads
-
-A floating speaking portrait on screen. Configure in **Talking Heads Config**.
-
-- **Always Visible** (toggle) — On: portraits stay up always, animate when speaking. Off: a portrait fades in only while that player talks. To disable heads entirely, set **Animation Mode → None**.
-- **Portrait Size** — width for viseme/token heads.
-- **Keep Aspect Ratio** — preserve natural proportions (avatars always do). Off = square crop, on = tall images.
-- **Show Name** / **Name Size** — character name plate below the portrait, with a size multiplier.
-- **Portrait Mask** — optional mask image applied to all heads (white = visible).
-- **Mirror (per player)** — flip a portrait horizontally so characters face inward. Applies to all viewers.
-
-The **GM** drags each head anywhere on screen. Positions save **per scene** and sync to all players.
-
-> **GM speaking through NPCs:** select any on-canvas token that isn't owned by a player and it becomes the GM's talking head. One at a time.
-
----
-
-## Avatar Mode
-
-Want a full-body or alternate portrait instead of the token art? Drop an `-avatar` image next to the base token:
-
-```text
-Katrina_token.webp           ← token art
-Katrina_token-avatar.webp    ← full-body / portrait   ← add this
-```
-
-Turn on **Prefer Avatar Image** in *Talking Heads Config*. Each head that has an `-avatar` file uses it; heads without one keep their normal viseme/token pipeline.
-
-<!-- TODO: add avatar example image here -->
-
-Notes:
-
-- An avatar is a **single image — it can't lip-sync.** It follows the world Animation Mode clamped to None/Simple (Simple/Hybrid/Both → bounce, Advanced/None → static).
-- **Avatar Size** has its own slider (separate from Portrait Size); avatars always keep their aspect ratio.
-- A token with both `-avatar` and visemes uses the avatar (no lip-sync) while Prefer Avatar is on.
-- Avatars have their own outline settings (see below).
-
----
-
-## Cartoon Outlines (Heads only)
-
-Talking Heads can draw a cartoon **silhouette outline** plus a speaking glow in the player's colour. Canvas tokens don't have this.
-
-An outline needs a real alpha shape to trace. Two sources:
-
-- a **Portrait Mask**, or
-- **Cutout Portraits** — treat the portrait PNG's own transparency as the shape (drops the circular clip).
-
-Plain rectangular images keep the normal box ring instead.
-
-The config has **two independent outline columns** — both always apply per head:
-
-- **Portrait / Viseme Outline** — for viseme & token heads. Always active.
-- **Avatar Outline** — for avatar heads, traced along the avatar PNG's alpha. Dimmed while *Prefer Avatar Image* is off.
-
-Each column has:
-
-- **Outline** (on/off) and **Width** (1–10 px).
-- **Player Colour** — On: outline uses each player's colour. Off: use the fixed **Colour** picker below (hidden while Player Colour is on).
-
----
-
-## Speaking Indicators
-
-Independent indicators for tokens and heads — set each separately:
-
-- **Ring** — coloured circle/border in the speaking user's colour (from *User Configuration*, bottom-left of the canvas).
-- **Bubble** — small animated speech bubble above the token/portrait.
-
-So you can have a head fully animate while the token only flashes a ring, etc.
-
----
-
-## Settings Reference
-
-**Module Settings → Live Actors** (top-level):
-
-<img width="793" height="698" alt="image" src="https://github.com/user-attachments/assets/2caf1ad9-a3d1-4a7f-a422-a708ce0a56b3" />
-
-| Setting | Scope | What it does |
-| --- | --- | --- |
-| **Mic Sensitivity** | Client | Raise for quiet mics, lower to cut background noise. |
-| **Speaker Widget** | World | Adds a GM toolbar button to speak through NPC tokens. |
-| **Pause During Encounters** | World | Auto-disable while a combat is active on the scene. |
-| **Disable Live Actors** | Client | Kills all mic/animation on this client. For low-end hardware. |
-| **Token Animation Config** | World (GM) | Mode, indicator, bounce preset + debug sliders for canvas tokens. |
-| **Talking Heads Config** | World (GM) | Heads visibility, size, mask, mode, avatar, outlines, mirror, bounce. |
-
-**Bounce presets vs Debug** (in both config menus): pick a **Preset** for a ready-made bounce feel. Turn on **Debug Mode** to reveal raw sliders (Intensity, Bounce, Wobble, Scale axis/limits/damping) — debug values override the preset. Higher **Damping** = smoother/slower; lower = snappier/wobblier.
+Each config menu has a **Bounce Preset** dropdown — pick a ready-made simple-animation feel. Presets are tuned per place (token / head / video tile).
 
 ---
 
 ## Installation
 
-**Via Foundry** (recommended) — paste in *Add-on Modules → Install Module*:
+**Via Foundry** — paste in *Add-on Modules → Install Module*:
 
 ```text
 https://github.com/mordachai/live-actors/releases/latest/download/module.json
