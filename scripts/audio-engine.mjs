@@ -40,21 +40,28 @@ export class AudioEngine {
   }
 
   static async _acquireStream() {
-    const foundryStream = game.webrtc?.client?.localStream ?? null;
-    if (foundryStream) {
-      ui.notifications.info("Live Actors: Using Foundry A/V microphone stream.");
-      return foundryStream;
-    }
-
+    // Capture our OWN microphone stream for analysis — an independent
+    // MediaStreamTrack, deliberately NOT Foundry's A/V broadcast track. This
+    // decouples animation from Foundry's mic: muting the Foundry mic (Echo Guard /
+    // external-voice mode) no longer kills lip-sync, and animation still works in
+    // VIDEO-only A/V where Foundry captures no audio track at all. See echo-guard.mjs.
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
       ui.notifications.info("Live Actors: Microphone access granted.");
       return stream;
     } catch (err) {
-      ui.notifications.warn("Live Actors: Could not access microphone. Check browser permissions.");
       console.error("Live Actors |", err);
-      return null;
     }
+
+    // Fallback only if our own capture was denied: reuse Foundry's A/V stream.
+    const foundryStream = game.webrtc?.client?.localStream ?? null;
+    if (foundryStream) {
+      ui.notifications.info("Live Actors: Using Foundry A/V microphone stream (fallback).");
+      return foundryStream;
+    }
+
+    ui.notifications.warn("Live Actors: Could not access microphone. Check browser permissions.");
+    return null;
   }
 
   static _poll() {

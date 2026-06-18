@@ -39,7 +39,7 @@ Everything runs peer-to-peer over Foundry's socket — no database writes, no se
 
    <img width="338" alt="mic permission prompt" src="https://github.com/user-attachments/assets/b4ac9eb7-bcd9-4c0f-a9d2-abceddd97b1c" />
 
-3. **Using Foundry A/V?** Tell everyone to set their voice to *Always Enabled* (or hold the push-to-talk key). A muted mic = no animation.
+3. **On Discord (or any external voice) but running Foundry Audio/Video?** Turn on **Echo Guard** in *Module Settings → Live Actors* (GM, whole table). Mutes everyone's Foundry mic so no one is heard twice. Animation still runs — Live Actors captures the mic itself. GM gets a one-click prompt when Foundry's A/V audio is live.
 4. **Pick where to animate** — Token, Video tile, Avatar (Talking Head). Each independent, GM sets the mode per place in *Module Settings → Live Actors*.
 5. **Tune Mic Sensitivity** (per client): raise for quiet mics, lower to cut background noise.
 
@@ -289,6 +289,7 @@ _Avatar with outline and with player color outline + ring speaker animation_
 | **Token Animation Config** | Token mode, indicator, bounce preset, mask. |
 | **Talking Heads Config** | Avatar visibility, size, mask, mirror, outline, avatar image, mode, bounce preset. |
 | **Video Window Config** | Video tile mode, clean mode, bounce preset. |
+| **Echo Guard (External Voice Mode)** | On Discord/another app while running Foundry Audio/Video? Mutes everyone's Foundry mic so no one is heard twice. GM-controlled, table-wide. Animation keeps working. |
 | **Mic Sensitivity** | Raise for quiet mics, lower to cut background noise. |
 | **Speaker Widget** | GM toolbar button to speak through NPC tokens. Overrides the current token selection. |
 | **Pause During Encounters** | Auto-disable while a combat encounter is active on the scene. |

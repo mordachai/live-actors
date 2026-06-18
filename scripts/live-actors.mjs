@@ -1,5 +1,6 @@
 import { AudioEngine } from "./audio-engine.mjs";
 import { CanvasAnimator } from "./canvas-animator.mjs";
+import { EchoGuard } from "./echo-guard.mjs";
 import { SocketHandler } from "./socket-handler.mjs";
 import { SpeakerWidget } from "./speaker-widget.mjs";
 import { TalkingHeads } from "./talking-heads.mjs";
@@ -38,6 +39,29 @@ function registerSettings() {
   // ── Visible in main settings panel ────────────────────────────
 
   // ── Player-visible settings ───────────────────────────────────
+
+  // Echo Guard — world-scoped (GM-enforced, table-wide) but shown in the main
+  // panel so it is easy to find. When on, every client mutes its own outgoing
+  // Foundry microphone so external-voice (Discord etc.) tables aren't heard twice.
+  // See echo-guard.mjs. onChange fires on every client → table-wide fan-out.
+  game.settings.register("live-actors", "externalVoice", {
+    name: "Echo Guard (External Voice Mode)",
+    hint: "On Discord or another voice app while running Foundry Audio/Video? Turn this on to mute every player's Foundry microphone so no one is heard twice. Cameras and animations keep working. GM-controlled, applies to the whole table.",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: false,
+    onChange: () => EchoGuard.apply(),
+  });
+
+  // Hidden, client-scoped — snapshot of this client's mic-mute choice taken when
+  // Echo Guard turns on, so turning it off restores the player's prior state.
+  game.settings.register("live-actors", "echoGuardSnapshot", {
+    scope: "client",
+    config: false,
+    type: Object,
+    default: { captured: false, muted: false },
+  });
 
   game.settings.register("live-actors", "sensitivity", {
     name: "Mic Sensitivity",
@@ -308,6 +332,15 @@ Hooks.on("ready", () => {
   if (store?.getItem("live-actors.advancedMode") !== null && store?.getItem("live-actors.mode") === null) {
     game.settings.set("live-actors", "mode", store.getItem("live-actors.advancedMode") === "true" ? "advanced" : "simple");
   }
+
+  // Echo Guard runs regardless of disableAnimations — it governs Foundry mic
+  // broadcast, not animation. A player on low-end hardware (animations off) must
+  // still be muted so they don't double their voice over external chat. Reassert
+  // on every A/V render so a player can't un-mute themselves in the dock while on.
+  Hooks.on("renderCameraViews",  () => EchoGuard.reassert());
+  Hooks.on("renderCameraPopout", () => EchoGuard.reassert());
+  EchoGuard.apply();
+  EchoGuard.maybePromptGM();
 
   if (game.settings.get("live-actors", "disableAnimations")) return;
 
