@@ -5,11 +5,11 @@
 
 Live Actors listens to your microphone and animates the speaking player in real time. It can animate three places at once, each on its own:
 
-# Vtuber alike table:
+#3 Vtuber alike table lip-sync:
 
 <img width="950" height="534" alt="image" src="https://github.com/user-attachments/assets/67b08047-0509-4c5f-8d9e-2813baa9889c" />
 
-# A theather of the mind setup:
+# Video frames setup:
 
 <img width="950" height="535" alt="image" src="https://github.com/user-attachments/assets/0a6bed10-13aa-46e5-a974-ab9fea38cba0" />
 
@@ -37,7 +37,7 @@ Everything runs peer-to-peer over Foundry's socket — no database writes, no se
 1. **Install & enable** the module, reload the world.
 2. **Allow microphone access** when the browser asks — required even if you don't run audio through Foundry. Without it nothing animates.
 
-   <img width="338" alt="mic permission prompt" src="https://github.com/user-attachments/assets/b4ac9eb7-bcd9-4c0f-a9d2-abceddd97b1c" />
+   <img width="208" alt="mic permission prompt" src="https://github.com/user-attachments/assets/b4ac9eb7-bcd9-4c0f-a9d2-abceddd97b1c" />
 
 3. **On Discord (or any external voice) but running Foundry Audio/Video?** Turn on **Echo Guard** in *Module Settings → Live Actors* (GM, whole table). Mutes everyone's Foundry mic so no one is heard twice. Animation still runs — Live Actors captures the mic itself. GM gets a one-click prompt when Foundry's A/V audio is live.
 4. **Pick where to animate** — Token, Video tile, Avatar (Talking Head). Each independent, GM sets the mode per place in *Module Settings → Live Actors*.
