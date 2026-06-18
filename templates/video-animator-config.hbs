@@ -3,7 +3,7 @@
   <fieldset>
     <legend>Animation Mode</legend>
     <div class="form-group slim">
-      <label>Mode</label>
+      <label>Mode <i class="fa-solid fa-circle-question lva-help" data-tooltip-direction="UP" data-tooltip-class="lva-help-tip" data-tooltip-html="<ul><li><strong>None</strong> — off</li><li><strong>Simple</strong> — bounce/wobble</li><li><strong>Lip-Sync</strong> — mouth shapes</li><li><strong>Hybrid</strong> — lip-sync if sprites exist, else bounce</li><li><strong>Both</strong> — lip-sync + bounce</li></ul>Needs Foundry Audio/Video enabled (not Disabled)."></i></label>
       <div class="form-fields">
         <select name="videoMode">
           {{#each modeOptions}}
@@ -11,14 +11,13 @@
           {{/each}}
         </select>
       </div>
-      <p class="hint">None: feature disabled. Simple: bounce/wobble. Lip-Sync: viseme mouth-shapes. Hybrid: visemes when sprites found, bounce otherwise. — Requires Foundry A/V enabled (not Disabled mode).</p>
     </div>
   </fieldset>
 
   <fieldset class="lva-bounce-config">
     <legend>Bounce Preset</legend>
     <div class="form-group slim">
-      <label>Preset</label>
+      <label>Preset <i class="fa-solid fa-circle-question lva-help" data-tooltip-direction="UP" data-tooltip-class="lva-help-tip" data-tooltip-html="Pick a bounce feel (tuned smaller for the A/V tile):<ul><li><strong>Pulse</strong> — gentle grow/shrink, no jump</li><li><strong>Bouncy</strong> — light, happy bounce</li><li><strong>Wobbly</strong> — tilts side to side</li><li><strong>Stretchy</strong> — squashes and stretches tall</li><li><strong>Toon</strong> — cartoony bounce, tilt and stretch</li><li><strong>Toon Wobble</strong> — Toon, snappier and wobblier</li></ul>"></i></label>
       <div class="form-fields">
         <select name="videoBouncePreset">
           {{#each presetOptions}}
@@ -26,13 +25,11 @@
           {{/each}}
         </select>
       </div>
-      <p class="hint">Choose a bounce style. Values are tuned for the smaller AV tile scale — tune presets in scripts/animation-presets.mjs (VIDEO_BOUNCE_PRESETS).</p>
     </div>
   </fieldset>
 
   <fieldset>
-    <legend>Clean Mode — hide A/V chrome</legend>
-    <p class="hint" style="margin:0 0 0.5rem">Each option hides a UI element from all camera tiles. Applied per-client so each player can configure their own view. Requires Foundry A/V to be enabled.</p>
+    <legend>Clean Mode <i class="fa-solid fa-circle-question lva-help" data-tooltip-direction="UP" data-tooltip-class="lva-help-tip" data-tooltip-html="Hide Foundry's A/V chrome on the camera tiles. Per-client — each player sets their own view. Needs Foundry Audio/Video enabled."></i></legend>
     <div class="form-group slim">
       <label>Hide player names</label>
       <div class="form-fields">
@@ -40,18 +37,16 @@
       </div>
     </div>
     <div class="form-group slim">
-      <label>Hide Controls</label>
+      <label>Hide Controls <i class="fa-solid fa-circle-question lva-help" data-tooltip-direction="UP" data-tooltip-class="lva-help-tip" data-tooltip-html="Hides status icons, control buttons, the volume slider and the per-tile controls bar."></i></label>
       <div class="form-fields">
         <input type="checkbox" name="cleanControls" {{#if cleanControls}}checked{{/if}}>
       </div>
-      <p class="hint">Hides status icons, all control buttons, the volume slider and the per-tile user-controls bar.</p>
     </div>
     <div class="form-group slim">
-      <label>Hide Borders</label>
+      <label>Hide Borders <i class="fa-solid fa-circle-question lva-help" data-tooltip-direction="UP" data-tooltip-class="lva-help-tip" data-tooltip-html="Hides the coloured border, speaking ring and shadow on tiles (normal + minimized)."></i></label>
       <div class="form-fields">
         <input type="checkbox" name="cleanBorder" {{#if cleanBorder}}checked{{/if}}>
       </div>
-      <p class="hint">Hides the colored border, speaking ring and box-shadow on camera tiles (both normal and minimized mode).</p>
     </div>
   </fieldset>
 

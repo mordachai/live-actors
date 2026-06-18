@@ -68,9 +68,9 @@ export class TalkingHeadsConfig extends HandlebarsApplicationMixin(ApplicationV2
       modeOptions: [
         { value: "none",     label: "None (Disabled)",           selected: headMode === "none"     },
         { value: "simple",   label: "Simple (Bounce)",           selected: headMode === "simple"   },
-        { value: "advanced", label: "Lip-Sync (Visemes)",        selected: headMode === "advanced" },
-        { value: "hybrid",   label: "Hybrid (Visemes or Bounce)",selected: headMode === "hybrid"   },
-        { value: "both",     label: "Both (Visemes + Bounce)",   selected: headMode === "both"     },
+        { value: "advanced", label: "Lip-Sync",                    selected: headMode === "advanced" },
+        { value: "hybrid",   label: "Hybrid (Lip-Sync or Bounce)",selected: headMode === "hybrid"   },
+        { value: "both",     label: "Both (Lip-Sync + Bounce)",   selected: headMode === "both"     },
       ],
       players,
     };

@@ -17,10 +17,12 @@
 #live-actors-simple-config .lva-simple-config .sheet-footer {
   position: sticky;
   bottom: 0;
-  /* background: var(--color-bg-option, #f0ebe4); */
-  padding-top: 0.5rem;
+  background: var(--background, var(--color-cool-5, #1f2129));
+  padding: 0.5rem 0.25rem 0.4rem;
   margin-top: auto;
   justify-content: flex-end;
+  border-top: 1px solid var(--color-border-light-tertiary, #444);
+  box-shadow: 0 -4px 6px -4px rgba(0, 0, 0, 0.5);
   z-index: 1;
 }
 
@@ -45,6 +47,39 @@
   text-align: right;
   font-variant-numeric: tabular-nums;
   font-size: 0.85em;
+}
+
+/* ── Config hint tooltips (shared by all LVA config panels) ──── */
+
+/* The (?) marker that replaces inline <p class="hint"> text. Hover shows a
+   Foundry rich tooltip (data-tooltip-html). Cursor intentionally unchanged. */
+.lva-help {
+  font-size: 0.8em;
+  opacity: 0.5;
+  margin-left: 0.35ch;
+  vertical-align: baseline;
+  transition: opacity 0.1s;
+}
+.lva-help:hover {
+  opacity: 0.95;
+}
+
+/* Widen + left-align the tooltip so lists read well. Opt-in per element via
+   data-tooltip-class="lva-help-tip". */
+#tooltip.lva-help-tip,
+.locked-tooltip.lva-help-tip {
+  text-align: left;
+  max-width: 340px;
+  white-space: normal;
+}
+#tooltip.lva-help-tip ul,
+.locked-tooltip.lva-help-tip ul {
+  margin: 0.25em 0 0;
+  padding-left: 1.15em;
+}
+#tooltip.lva-help-tip li,
+.locked-tooltip.lva-help-tip li {
+  margin: 0.12em 0;
 }
 
 /* ── Speaker Widget ─────────────────────────────────────────── */
@@ -322,10 +357,12 @@
 #live-actors-heads-config .lva-heads-config .sheet-footer {
   position: sticky;
   bottom: 0;
-  /* background: var(--color-bg-option, #f0ebe4); */
-  padding-top: 0.5rem;
+  background: var(--background, var(--color-cool-5, #1f2129));
+  padding: 0.5rem 0.25rem 0.4rem;
   margin-top: auto;
   justify-content: flex-end;
+  border-top: 1px solid var(--color-border-light-tertiary, #444);
+  box-shadow: 0 -4px 6px -4px rgba(0, 0, 0, 0.5);
   z-index: 1;
 }
 
@@ -503,9 +540,12 @@ form:not(.lva-avatar-on) .lva-outline-col--avatar :is(input, select, button) {
 #live-actors-video-config .lva-video-config .sheet-footer {
   position: sticky;
   bottom: 0;
-  padding-top: 0.5rem;
+  background: var(--background, var(--color-cool-5, #1f2129));
+  padding: 0.5rem 0.25rem 0.4rem;
   margin-top: auto;
   justify-content: flex-end;
+  border-top: 1px solid var(--color-border-light-tertiary, #444);
+  box-shadow: 0 -4px 6px -4px rgba(0, 0, 0, 0.5);
   z-index: 1;
 }
 

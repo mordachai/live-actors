@@ -46,7 +46,7 @@ function registerSettings() {
   // See echo-guard.mjs. onChange fires on every client → table-wide fan-out.
   game.settings.register("live-actors", "externalVoice", {
     name: "Echo Guard (External Voice Mode)",
-    hint: "On Discord or another voice app while running Foundry Audio/Video? Turn this on to mute every player's Foundry microphone so no one is heard twice. Cameras and animations keep working. GM-controlled, applies to the whole table.",
+    hint: "Prevents echo when you talk over Discord (or similar). Mutes everyone's Foundry mic. Leave off if you use Foundry's own audio.",
     scope: "world",
     config: true,
     type: Boolean,

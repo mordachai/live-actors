@@ -53,9 +53,9 @@ export class VideoAnimatorConfig extends HandlebarsApplicationMixin(ApplicationV
       modeOptions: [
         { value: "none",     label: "None (Disabled)",            selected: videoMode === "none"     },
         { value: "simple",   label: "Simple (Bounce)",            selected: videoMode === "simple"   },
-        { value: "advanced", label: "Lip-Sync (Visemes)",         selected: videoMode === "advanced" },
-        { value: "hybrid",   label: "Hybrid (Visemes or Bounce)", selected: videoMode === "hybrid"   },
-        { value: "both",     label: "Both (Visemes + Bounce)",    selected: videoMode === "both"     },
+        { value: "advanced", label: "Lip-Sync",                     selected: videoMode === "advanced" },
+        { value: "hybrid",   label: "Hybrid (Lip-Sync or Bounce)", selected: videoMode === "hybrid"   },
+        { value: "both",     label: "Both (Lip-Sync + Bounce)",    selected: videoMode === "both"     },
       ],
       presetOptions: BOUNCE_PRESET_OPTIONS.map(o => ({ ...o, selected: preset === o.value })),
       // Clean mode — client-scoped, so each GM client stores their own preference.

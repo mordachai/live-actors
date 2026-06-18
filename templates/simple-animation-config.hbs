@@ -3,7 +3,7 @@
   <fieldset>
     <legend>Animation Mode</legend>
     <div class="form-group slim">
-      <label>Mode</label>
+      <label>Mode <i class="fa-solid fa-circle-question lva-help" data-tooltip-direction="UP" data-tooltip-class="lva-help-tip" data-tooltip-html="<ul><li><strong>None</strong> — off</li><li><strong>Simple</strong> — bounce/wobble</li><li><strong>Lip-Sync</strong> — mouth shapes</li><li><strong>Hybrid</strong> — lip-sync if sprites exist, else bounce</li><li><strong>Both</strong> — lip-sync + bounce</li></ul>"></i></label>
       <div class="form-fields">
         <select name="mode">
           {{#each modeOptions}}
@@ -11,14 +11,13 @@
           {{/each}}
         </select>
       </div>
-      <p class="hint">None: no animation. Simple: bounce/wobble. Lip-Sync: viseme mouth-shapes. Hybrid: visemes when sprites found, bounce otherwise.</p>
     </div>
   </fieldset>
 
   <fieldset>
     <legend>Speaking Indicator</legend>
     <div class="form-group slim">
-      <label>Style</label>
+      <label>Style <i class="fa-solid fa-circle-question lva-help" data-tooltip-direction="UP" data-tooltip-class="lva-help-tip" data-tooltip-html="<strong>Ring</strong> — circle around the token<br><strong>Bubble</strong> — speech bubble above it<br>Separate from the Talking Head indicator."></i></label>
       <div class="form-fields">
         <select name="indicatorStyle">
           {{#each indicatorOptions}}
@@ -26,14 +25,13 @@
           {{/each}}
         </select>
       </div>
-      <p class="hint">Ring: coloured circle around the token. Bubble: animated speech bubble above it. Independent from the Talking Head indicator.</p>
     </div>
   </fieldset>
 
   <fieldset class="lva-bounce-config">
     <legend>Bounce Config</legend>
     <div class="form-group slim">
-      <label>Preset</label>
+      <label>Preset <i class="fa-solid fa-circle-question lva-help" data-tooltip-direction="UP" data-tooltip-class="lva-help-tip" data-tooltip-html="Pick a bounce feel:<ul><li><strong>Pulse</strong> — gentle grow/shrink, no jump</li><li><strong>Bouncy</strong> — light, happy bounce</li><li><strong>Wobbly</strong> — tilts side to side</li><li><strong>Stretchy</strong> — squashes and stretches tall</li><li><strong>Toon</strong> — cartoony bounce, tilt and stretch</li><li><strong>Toon Wobble</strong> — Toon, snappier and wobblier</li></ul>"></i></label>
       <div class="form-fields">
         <select name="bouncePreset">
           {{#each presetOptions}}
@@ -41,7 +39,6 @@
           {{/each}}
         </select>
       </div>
-      <p class="hint">Choose a bounce style. Tune preset values in scripts/animation-presets.mjs.</p>
     </div>
   </fieldset>
 

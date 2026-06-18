@@ -3,7 +3,7 @@
   <fieldset>
     <legend>Animation Mode</legend>
     <div class="form-group slim">
-      <label>Mode</label>
+      <label>Mode <i class="fa-solid fa-circle-question lva-help" data-tooltip-direction="UP" data-tooltip-class="lva-help-tip" data-tooltip-html="<strong>One mode for all heads</strong>, clamped to each head's assets.<ul><li>Heads with viseme images (sheet / 4 imgs) — every mode</li><li>Avatar or token-only heads — bounce only</li></ul>Mixed world? Use <strong>Hybrid</strong> — lip-sync where possible, bounce otherwise."></i></label>
       <div class="form-fields">
         <select name="headMode">
           {{#each modeOptions}}
@@ -11,14 +11,13 @@
           {{/each}}
         </select>
       </div>
-      <p class="hint">One mode for every head; each head is clamped to what its assets allow. <strong>Visemes</strong> (sheet / 4 imgs) can do all modes. <strong>Avatar</strong> (solo img) and <strong>token-only</strong> heads can only bounce — Simple/Hybrid/Both → bounce, Lip-Sync → static, None → still. For a mixed world (some visemes, some avatars) use <strong>Hybrid</strong>: visemes lip-sync, everything else bounces.</p>
     </div>
   </fieldset>
 
   <fieldset>
     <legend>Speaking Indicator</legend>
     <div class="form-group slim">
-      <label>Style</label>
+      <label>Style <i class="fa-solid fa-circle-question lva-help" data-tooltip-direction="UP" data-tooltip-class="lva-help-tip" data-tooltip-html="<strong>Ring</strong> — coloured border glow<br><strong>Bubble</strong> — speech bubble above the portrait<br>Separate from the canvas token indicator."></i></label>
       <div class="form-fields">
         <select name="headIndicatorStyle">
           {{#each indicatorOptions}}
@@ -26,70 +25,62 @@
           {{/each}}
         </select>
       </div>
-      <p class="hint">Ring: coloured border glow. Bubble: animated speech bubble above the portrait. Independent from the canvas token indicator.</p>
     </div>
   </fieldset>
 
   <fieldset>
     <legend>Portrait</legend>
     <div class="form-group slim">
-      <label>Always Visible</label>
+      <label>Always Visible <i class="fa-solid fa-circle-question lva-help" data-tooltip-direction="UP" data-tooltip-class="lva-help-tip" data-tooltip-html="On — portraits stay on screen. Off — a portrait shows only while that player talks. Disable heads entirely with Animation Mode = None."></i></label>
       <div class="form-fields">
         <input type="checkbox" name="headsAlways" {{#if headsAlways}}checked{{/if}}>
       </div>
-      <p class="hint">On: portraits stay on screen at all times. Off: a portrait only appears while that player is talking. To disable talking heads entirely, set Animation Mode to None.</p>
     </div>
     <div class="form-group slim">
-      <label>Prefer Avatar Image</label>
+      <label>Prefer Avatar Image <i class="fa-solid fa-circle-question lva-help" data-tooltip-direction="UP" data-tooltip-class="lva-help-tip" data-tooltip-html="Show the <strong>{token}-avatar</strong> image (full-body) instead of token art. Solo image, so no lip-sync — follows Mode, clamped to None/Simple. No avatar → uses viseme/token art."></i></label>
       <div class="form-fields">
         <input type="checkbox" name="headUseAvatar" {{#if useAvatar}}checked{{/if}}>
       </div>
-      <p class="hint">When a "{token}-avatar" image exists, show it (full-body/portrait) instead of the token art. Avatar is a solo image, so it can't lip-sync — it follows the Animation Mode above, clamped to None/Simple. Heads with no avatar keep using their visemes/token art.</p>
     </div>
     <div class="form-group slim">
-      <label>Portrait Size (px)</label>
+      <label>Portrait Size (px) <i class="fa-solid fa-circle-question lva-help" data-tooltip-direction="UP" data-tooltip-class="lva-help-tip" data-tooltip-html="Width for viseme/token heads. Height scales with the image when Keep Aspect Ratio is on."></i></label>
       <div class="form-fields">
         <input type="range" name="headWidth" min="100" max="340" step="4" value="{{headWidth}}">
         <span class="range-value">{{headWidth}}</span>
       </div>
-      <p class="hint">Width for viseme/token heads. Height scales with the image when Keep Aspect Ratio is enabled.</p>
     </div>
     <div class="form-group slim">
-      <label>Avatar Size (px)</label>
+      <label>Avatar Size (px) <i class="fa-solid fa-circle-question lva-help" data-tooltip-direction="UP" data-tooltip-class="lva-help-tip" data-tooltip-html="Width for avatar heads. Height always keeps the image's aspect ratio."></i></label>
       <div class="form-fields">
         <input type="range" name="headAvatarWidth" min="100" max="600" step="10" value="{{headAvatarWidth}}">
         <span class="range-value">{{headAvatarWidth}}</span>
       </div>
-      <p class="hint">Width for avatar heads. Height always scales with the image's aspect ratio.</p>
     </div>
     <div class="form-group slim">
-      <label>Keep Aspect Ratio</label>
+      <label>Keep Aspect Ratio <i class="fa-solid fa-circle-question lva-help" data-tooltip-direction="UP" data-tooltip-class="lva-help-tip" data-tooltip-html="Keep natural proportions for viseme/token heads (avatars always do). Off — square crop."></i></label>
       <div class="form-fields">
         <input type="checkbox" name="headAspectRatio" {{#if headAspectRatio}}checked{{/if}}>
       </div>
-      <p class="hint">Preserve natural proportions for viseme/token heads (avatars always keep aspect). Disable for square portraits; enable for tall images.</p>
     </div>
     <div class="form-group slim">
-      <label>Show Name</label>
+      <label>Show Name <i class="fa-solid fa-circle-question lva-help" data-tooltip-direction="UP" data-tooltip-class="lva-help-tip" data-tooltip-html="Show the character name below each portrait."></i></label>
       <div class="form-fields">
         <input type="checkbox" name="showHeadName" {{#if showHeadName}}checked{{/if}}>
       </div>
-      <p class="hint">Display the character name below each portrait.</p>
     </div>
     <div class="form-group slim">
-      <label>Name Size</label>
+      <label>Name Size <i class="fa-solid fa-circle-question lva-help" data-tooltip-direction="UP" data-tooltip-class="lva-help-tip" data-tooltip-html="Name font multiplier. 1.0 = default (auto-scaled with portrait width)."></i></label>
       <div class="form-fields">
         <input type="range" name="headNameSize" min="0.5" max="2.5" step="0.1" value="{{headNameSize}}">
         <span class="range-value">{{headNameSize}}</span>
       </div>
-      <p class="hint">Multiplier on the name plate font size. 1.0 = default (auto-scaled with portrait width).</p>
     </div>
   </fieldset>
 
   <fieldset>
     <legend>Appearance</legend>
     <div class="form-group slim">
-      <label>Portrait Mask</label>
+      <label>Portrait Mask <i class="fa-solid fa-circle-question lva-help" data-tooltip-direction="UP" data-tooltip-class="lva-help-tip" data-tooltip-html="Optional mask for all portraits. White = visible, transparent/black = hidden. One file for every head."></i></label>
       <div class="form-fields">
         <input type="text" name="headMask" value="{{headMask}}" placeholder="Path to mask image (optional)...">
         <button type="button" data-action="browseMask" title="Browse for mask image">
@@ -99,27 +90,23 @@
           <i class="fas fa-trash"></i>
         </button>
       </div>
-      <p class="hint">Optional mask image applied to all talking head portraits. White = visible, transparent/black = hidden. One file for all heads.</p>
     </div>
   </fieldset>
 
   <div class="lva-outline-columns">
   <fieldset class="lva-outline-col lva-outline-col--portrait">
-    <legend>Portrait / Viseme Outline</legend>
-    <p class="hint">Applies to viseme &amp; token heads. Always active.</p>
+    <legend>Portrait / Viseme Outline <i class="fa-solid fa-circle-question lva-help" data-tooltip-direction="UP" data-tooltip-class="lva-help-tip" data-tooltip-html="Applies to viseme/token heads. Always active."></i></legend>
     <div class="form-group slim">
-      <label>Outline</label>
+      <label>Outline <i class="fa-solid fa-circle-question lva-help" data-tooltip-direction="UP" data-tooltip-class="lva-help-tip" data-tooltip-html="Cartoon outline on the silhouette. Needs alpha — a Portrait Mask, or Cutout for transparent-PNG art. Plain rectangular images keep the normal ring."></i></label>
       <div class="form-fields">
         <input type="checkbox" name="headOutline" {{#if headOutline}}checked{{/if}}>
       </div>
-      <p class="hint">Cartoon outline around the silhouette. Needs alpha: a Portrait Mask, or Cutout for transparent-PNG art. Plain rectangular images keep the normal ring.</p>
     </div>
     <div class="form-group slim lva-outline-only">
-      <label>Cutout Portraits</label>
+      <label>Cutout Portraits <i class="fa-solid fa-circle-question lva-help" data-tooltip-direction="UP" data-tooltip-class="lva-help-tip" data-tooltip-html="Use the portrait PNG's own transparency as the shape — no mask needed. Outline and ring follow that alpha."></i></label>
       <div class="form-fields">
         <input type="checkbox" name="headCutout" {{#if headCutout}}checked{{/if}}>
       </div>
-      <p class="hint">Treat portraits as transparent cutouts (no mask needed) so the outline and speaking ring follow the PNG's own alpha shape.</p>
     </div>
     <div class="form-group slim lva-outline-only">
       <label>Width (px)</label>
@@ -129,30 +116,26 @@
       </div>
     </div>
     <div class="form-group slim lva-outline-only">
-      <label>Player Colour</label>
+      <label>Player Colour <i class="fa-solid fa-circle-question lva-help" data-tooltip-direction="UP" data-tooltip-class="lva-help-tip" data-tooltip-html="On — each portrait uses that player's colour. Off — the fixed colour below."></i></label>
       <div class="form-fields">
         <input type="checkbox" name="headOutlineAuto" {{#if headOutlineAuto}}checked{{/if}}>
       </div>
-      <p class="hint">On: each portrait is outlined in that player's colour. Off: use the fixed colour below.</p>
     </div>
     <div class="form-group slim lva-outline-only">
-      <label>Colour</label>
+      <label>Colour <i class="fa-solid fa-circle-question lva-help" data-tooltip-direction="UP" data-tooltip-class="lva-help-tip" data-tooltip-html="Used only when Player Colour is off."></i></label>
       <div class="form-fields">
         <input type="color" name="headOutlineColor" value="{{headOutlineColor}}">
       </div>
-      <p class="hint">Used only when "Use Player Colour" is off.</p>
     </div>
   </fieldset>
 
   <fieldset class="lva-outline-col lva-outline-col--avatar">
-    <legend>Avatar Outline</legend>
-    <p class="hint">Applies to avatar heads. Dimmed when Prefer Avatar Image is off.</p>
+    <legend>Avatar Outline <i class="fa-solid fa-circle-question lva-help" data-tooltip-direction="UP" data-tooltip-class="lva-help-tip" data-tooltip-html="Applies to avatar heads. Dimmed when Prefer Avatar Image is off."></i></legend>
     <div class="form-group slim">
-      <label>Outline</label>
+      <label>Outline <i class="fa-solid fa-circle-question lva-help" data-tooltip-direction="UP" data-tooltip-class="lva-help-tip" data-tooltip-html="Outline along the avatar PNG's own alpha silhouette. Separate from the portrait outline."></i></label>
       <div class="form-fields">
         <input type="checkbox" name="headAvatarOutline" {{#if headAvatarOutline}}checked{{/if}}>
       </div>
-      <p class="hint">Outline along the avatar PNG's own alpha silhouette. Separate from the portrait outline.</p>
     </div>
     <div class="form-group slim lva-avatar-outline-only">
       <label>Width (px)</label>
@@ -162,18 +145,16 @@
       </div>
     </div>
     <div class="form-group slim lva-avatar-outline-only">
-      <label>Player Colour</label>
+      <label>Player Colour <i class="fa-solid fa-circle-question lva-help" data-tooltip-direction="UP" data-tooltip-class="lva-help-tip" data-tooltip-html="On — each avatar uses that player's colour. Off — the fixed colour below."></i></label>
       <div class="form-fields">
         <input type="checkbox" name="headAvatarOutlineAuto" {{#if headAvatarOutlineAuto}}checked{{/if}}>
       </div>
-      <p class="hint">On: each avatar is outlined in that player's colour. Off: use the fixed colour below.</p>
     </div>
     <div class="form-group slim lva-avatar-outline-only">
-      <label>Colour</label>
+      <label>Colour <i class="fa-solid fa-circle-question lva-help" data-tooltip-direction="UP" data-tooltip-class="lva-help-tip" data-tooltip-html="Used only when Player Colour is off."></i></label>
       <div class="form-fields">
         <input type="color" name="headAvatarOutlineColor" value="{{headAvatarOutlineColor}}">
       </div>
-      <p class="hint">Used only when "Use Player Colour" is off.</p>
     </div>
   </fieldset>
   </div>
@@ -181,7 +162,7 @@
   <fieldset class="lva-bounce-config">
     <legend>Bounce Config</legend>
     <div class="form-group slim">
-      <label>Preset</label>
+      <label>Preset <i class="fa-solid fa-circle-question lva-help" data-tooltip-direction="UP" data-tooltip-class="lva-help-tip" data-tooltip-html="Pick a bounce feel:<ul><li><strong>Pulse</strong> — gentle grow/shrink, no jump</li><li><strong>Bouncy</strong> — light, happy bounce</li><li><strong>Wobbly</strong> — tilts side to side</li><li><strong>Stretchy</strong> — squashes and stretches tall</li><li><strong>Toon</strong> — cartoony bounce, tilt and stretch</li><li><strong>Toon Wobble</strong> — Toon, snappier and wobblier</li></ul>"></i></label>
       <div class="form-fields">
         <select name="headBouncePreset">
           {{#each presetOptions}}
@@ -189,13 +170,12 @@
           {{/each}}
         </select>
       </div>
-      <p class="hint">Choose a bounce style. Tune preset values in scripts/animation-presets.mjs.</p>
     </div>
   </fieldset>
 
   {{#if players}}
   <fieldset>
-    <legend>Mirror (per player)</legend>
+    <legend>Mirror (per player) <i class="fa-solid fa-circle-question lva-help" data-tooltip-direction="UP" data-tooltip-class="lva-help-tip" data-tooltip-html="Flip a portrait so characters face inward. Applies to all viewers."></i></legend>
     {{#each players}}
     <div class="form-group slim">
       <label>{{name}}</label>
@@ -208,7 +188,6 @@
       </div>
     </div>
     {{/each}}
-    <p class="hint">Mirror flips a portrait so characters face inward. Applies to all viewers.</p>
   </fieldset>
   {{/if}}
 
