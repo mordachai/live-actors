@@ -181,7 +181,6 @@ Two ways to supply the four shapes. Choose just one per character, but you can u
 
 Position of the images matters:
 
-<img width="512" height="512" alt="goblin-sheet" src="https://github.com/user-attachments/assets/0df95dbc-6209-4c8a-b7d1-bc622765a686" />
 
 ```text
 ┌──────────┬──────────┐
@@ -197,8 +196,6 @@ Goblin_token-sheet.webp     ← 2×2 flipbook   ← add this
 **B — Individual files:** four separate images — one for each viseme.
 
 **Suffixes**: `-AH`, `-EE`, `-OO`, `-CLOSED`
-
-<img width="910" height="270" alt="image" src="https://github.com/user-attachments/assets/0477b411-0650-44a4-9e37-dde26ea26e4b" />
 
 ```text
 Katrina_token.webp           ← token art (untouched)
@@ -220,7 +217,6 @@ Katrina_token-OO.webp        ← OO / W / U
 
 Four mouth images at the same size, aligned by the eyes and top of the head. If you export as separate images from your preferred application it will be easy to keep them aligned. Software like Character Animator and Unreal Metahuman can give you awesome results using 3D. Or just go crazy and do _Robot Chicken_ / _South Park_ mouths — it's a lot of fun!
 
-<img width="909" height="236" alt="image" src="https://github.com/user-attachments/assets/ca4cef44-9e95-437e-b146-105afcadb623" />
 
 ---
 
@@ -232,14 +228,9 @@ Build the **base portrait first**, then feed it back as the input image for the 
 
 _Portrait of **[subject, pose, and style]** for a tabletop rpg. Square image. Fully transparent background (alpha channel, PNG) — no background fill, no shadow on the background. No token frame. No text._
 
-<img width="512" height="512" alt="Sylvie" src="https://github.com/user-attachments/assets/bf18be3e-4f0c-461d-bd1c-77058f7cb542" />
-
-
 ###### SHEET PROMPT:
 
 _From this image, create 4 mouth visemes as a 2×2 sprite sheet on a fully transparent background (alpha PNG): Closed (top-left), AH (top-right), EE (bottom-left), OO (bottom-right). These frames are swapped rapidly in a replacement animation, so they must register pixel-perfectly: keep head size and position, top-of-head line, eye line, nose, camera lens, POV, framing, and lighting IDENTICAL in all four quadrants. Each quadrant exactly equal size, subject centered identically in each cell. Animate only the mouth and chin; eyes near-still (very subtle motion only). No background fill, no shadow on background, no text, no borders, no grid lines._
-
-<img width="512" height="512" alt="Sylvie_token-sheet" src="https://github.com/user-attachments/assets/32f68894-c22e-4719-8c59-94231b27667d" />
 
 > **If frames still jitter,** drop the 2×2 sheet and generate each viseme as a separate edit of the same base portrait (`-closed`, `-AH`, `-EE`, `-OO`), changing only the mouth each time. Editing one fixed image locks the geometry far harder than any one-shot grid. The module reads either layout.
 
@@ -248,8 +239,6 @@ After the first character you can keep producing images easily:
 ###### FOLLOW-UP PROMPT:
 
 _do the same spritesheet, transparent background, same registration, for a **Dwarven Fighter with a warhammer**_
-
-<img width="512" height="512" alt="Krotnik-sheet" src="https://github.com/user-attachments/assets/1c72ef9e-3e5e-4247-9d18-808869c965f3" />
 
 Fast matching results. Try it!
 
@@ -264,12 +253,7 @@ Fast matching results. Try it!
 - **For talking heads (same for all):** Talking Heads Config → *Portrait Mask*.
 - Two ready-made masks ship in `assets/masks/` (`grunge-1`, `grunge-2`).
 
-<img width="553" height="282" alt="greyscale stencil clipping a portrait to shape" src="https://github.com/user-attachments/assets/3518ca46-255b-4d5a-88b2-d3ceffa4629f" />
-
 ### Cartoon Outline (Talking Heads / Avatar only)
-
-<img width="324" height="324" alt="image" src="https://github.com/user-attachments/assets/53c40de3-3450-4914-be8c-2e355a620255" />
-_Avatar with outline and with player color outline + ring speaker animation_
 
 - Outline around the silhouette,
 - Two independent outlines: **Portrait / Viseme** and **Avatar**.
