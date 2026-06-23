@@ -75,8 +75,6 @@ The effective mode is decided per token: no viseme images in a Lip-Sync/Hybrid/B
 
 Set independently per place. You can have the avatar fully animate while the token only flashes a ring.
 
-<img width="525" height="273" alt="image" src="https://github.com/user-attachments/assets/48fce629-fa0f-426f-bd42-9f92d952e7e0" />
-
 - **Ring** — coloured border in the speaking user's colour (set in *User Configuration*).
 - **Bubble** — small animated speech bubble above the token/portrait.
 
