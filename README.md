@@ -6,6 +6,10 @@
 
 Live Actors listens to your microphone and animates the speaking player in real time. It can animate three places at once, each on its own:
 
+- **Token** — Animates your actual token on the canvas with lip-sync or just some speech indicators.
+- **Video** — Display the lip-sync and/or animation on the Audio/Video camera of Foundry when the camera is off. No need to run audio through Foundry, just let it pick the mic in the browser.
+- **Avatar** — a floating "Talking Head" portrait on screen, use this if you don't want to use the camera area.
+
 ## Vtuber alike table lip-sync:
 
 <img width="950" height="534" alt="image" src="https://github.com/user-attachments/assets/67b08047-0509-4c5f-8d9e-2813baa9889c" />
@@ -26,10 +30,6 @@ Live Actors listens to your microphone and animates the speaking player in real 
 - [Installation](#installation)
 
 ---
-
-- **Token** — Animates your actual token on the canvas with lip-sync or just some speech indicators.
-- **Video** — Display the lip-sync and/or animation on the Audio/Video camera of Foundry when the camera is off. No need to run audio through Foundry, just let it pick the mic in the browser.
-- **Avatar** — a floating "Talking Head" portrait on screen, use this if you don't want to use the camera area.
 
 Everything runs peer-to-peer over Foundry's socket — no database writes, no server round-trip.
 
