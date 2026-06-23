@@ -10,14 +10,6 @@ Live Actors listens to your microphone and animates the speaking player in real 
 - **Video** — Display the lip-sync and/or animation on the Audio/Video camera of Foundry when the camera is off. No need to run audio through Foundry, just let it pick the mic in the browser.
 - **Avatar** — a floating "Talking Head" portrait on screen, use this if you don't want to use the camera area.
 
-## Vtuber alike table lip-sync:
-
-<img width="950" height="534" alt="image" src="https://github.com/user-attachments/assets/67b08047-0509-4c5f-8d9e-2813baa9889c" />
-
-## Video frames setup:
-
-<img width="950" height="535" alt="image" src="https://github.com/user-attachments/assets/0a6bed10-13aa-46e5-a974-ab9fea38cba0" />
-
 ## Contents
 
 - **[Quickstart](#quickstart)**
