@@ -1,7 +1,8 @@
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/W7W01A1ZN1)
+
 # Live Actors
 
-[![GitHub Release](https://img.shields.io/github/v/release/mordachai/live-actors?style=flat-square)](https://github.com/mordachai/live-actors/releases/latest)
-[![Foundry VTT](https://img.shields.io/badge/Foundry%20VTT-v14%2B-orange?style=flat-square)](https://foundryvtt.com)
+![Foundry v14](https://img.shields.io/badge/foundry-v14-blue?style=for-the-badge) ![Github All Releases](https://img.shields.io/github/downloads/mordachai/live-actors/total.svg?style=for-the-badge) ![GitHub Release](https://img.shields.io/github/v/release/mordachai/live-actors?display_name=tag&style=for-the-badge&label=Current%20version) 
 
 Live Actors listens to your microphone and animates the speaking player in real time. It can animate three places at once, each on its own:
 
