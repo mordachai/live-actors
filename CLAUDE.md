@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-Live Actors is a **Foundry VTT v14 module** (vanilla ES modules, no build step). It listens to the local microphone and animates the speaking player's canvas token and/or floating "Talking Head" portraits in real time. State is broadcast peer-to-peer over Foundry's socket — **no database writes, no server round-trip** for animation.
+Live Actors is a **Foundry VTT v14 module** (vanilla ES modules, no build step). It listens to the local microphone and animates the speaking player across **three independent surfaces** in real time: the canvas token (`CanvasAnimator`), floating "Talking Head" DOM portraits (`TalkingHeads`), and the **A/V camera tile** when the camera is off (`VideoAnimator` — replaces Foundry's static portrait with an animated frame). State is broadcast peer-to-peer over Foundry's socket — **no database writes, no server round-trip** for animation.
 
 ## Build / release / test
 
@@ -17,23 +17,27 @@ Live Actors is a **Foundry VTT v14 module** (vanilla ES modules, no build step).
 [module.json](module.json) loads a single ESM: [scripts/live-actors.mjs](scripts/live-actors.mjs). It owns all Foundry `Hooks` and orchestrates the subsystems. Key lifecycle:
 
 - `init` → `registerSettings()` (all `game.settings` live here, including hidden world-scoped animation params managed by the config sub-apps).
-- `ready` → bails if client setting `disableAnimations` is on; otherwise inits `SocketHandler`, `CanvasAnimator`, `TalkingHeads`, then `AudioEngine.init(callback)`. The callback is the **per-frame fan-out**: apply locally → broadcast over socket → update local talking heads.
-- `controlToken` (GM) → decides which selected non-player token becomes the GM's talking head, applies locally, and broadcasts a `gmHead` socket message (GM filters its own socket echo, so local application is required).
+- `ready` → wires `EchoGuard` (mute enforcement + GM popup) **first, before the `disableAnimations` bail** — Echo Guard governs Foundry mic broadcast, not animation, so it must run even on clients with animations off. Then bails if client setting `disableAnimations` is on; otherwise inits `SocketHandler`, `CanvasAnimator`, `TalkingHeads`, `VideoAnimator`, then `AudioEngine.init(callback)`. The callback is the **per-frame fan-out**: apply locally → broadcast over socket → update local talking heads + local video tile.
+- `controlToken` (GM) → decides which selected non-player token becomes the GM's talking head, applies locally, and broadcasts a `gmHead` socket message (GM filters its own socket echo, so local application is required). The same `gmHead` message also feeds `VideoAnimator.setGMAutoToken` so the GM's camera tile uses the controlled token.
 
 ## Data flow (the core architecture)
 
-```
+```text
 mic → AudioEngine._poll (30 Hz)         → state {mode, volume, viseme?}
         ↓ onState callback (live-actors.mjs ready hook)
    CanvasAnimator.applyLocalState(state) → animates local PIXI token mesh
+   TalkingHeads.update(localUserId, state)
+   VideoAnimator.applyLocalState(state)  → animates local A/V tile (camera off)
    SocketHandler.broadcast(state, tokenId)
         ↓ module.live-actors socket (throttled 15 Hz)
-   remote: CanvasAnimator.applyRemoteState + TalkingHeads.update
+   remote: CanvasAnimator.applyRemoteState + TalkingHeads.update + VideoAnimator.update
 ```
 
-Two render loops run independently off this shared `state`:
+Three render loops run independently off this shared `state`:
+
 - **CanvasAnimator** drives the PIXI token mesh on `PIXI.Ticker.shared`.
 - **TalkingHeads** drives DOM `<div>` portraits on `requestAnimationFrame`.
+- **VideoAnimator** drives a DOM `<img>` injected into the A/V camera tile on `requestAnimationFrame` (only while the camera feed is off).
 
 `state.volume` is normalized RMS (noise-gated by `sensitivity`). `state.speaking` is a **hysteresis** flag (enter/exit thresholds + silence-hold in AudioEngine) — animation is gated on it, not on raw volume, so ambient noise can't flicker it. `state.viseme` is only attached when some mode wants lip-sync.
 
@@ -43,16 +47,40 @@ Two render loops run independently off this shared `state`:
 
 **Closed-frame hold (viseme canvas tokens).** A viseme token must show its dedicated `-closed` frame at rest, never the base token art — and that must hold from the moment the token is *selected*, before any speech. A one-shot texture set on select loses to Foundry's own post-selection mesh refresh, so instead `CanvasAnimator.prepareToken(token, state?)` keeps the token in the active set (`hold: true`) and the tick re-asserts the closed texture every frame, surviving refreshes. Selection routes through `controlToken` → `prepareToken`; every *silent* `applyLocalState`/`applyRemoteState` frame routes through `prepareToken` too (so it never overwrites the hold with a non-hold silent state). Simple/none tokens don't hold — they only keep easing if already animating, then detach (zero idle). **Mirror/scale at idle is left entirely to Foundry:** the tick writes `mesh.scale/position/angle` only while `animating` (`speaking || !settled`); a held-at-rest token re-asserts texture only, so Foundry owns the resting mirror flip. Talking heads do the equivalent at build: `_setRestImage` is called right after `_discoverHeadImages` so a head shows `-closed` immediately (rest-image priority: closed > avatar > token), not after the first utterance.
 
+## Video Window animator (A/V camera tiles)
+
+[scripts/video-animator.mjs](scripts/video-animator.mjs) animates Foundry's built-in A/V camera tiles. **Only when the camera is off** (it detects `video.user-camera[hidden]`): it injects a `.lva-video-frame > img` over the tile's static `.user-avatar` and drives it with the same `state`. When the camera is on it removes the frame and lets Foundry's live feed take over.
+
+- **Hooking:** `Hooks.on("renderCameraViews")` and `Hooks.on("renderCameraPopout")` both fire after the tile DOM is (re)written — every render calls `_scanAll()` which re-syncs all `.camera-view[data-user]` tiles (Foundry destroys our injected frame on partial re-render, so re-injecting each time is required). The header comment in the file lists the exact selectors/hook names to check **if Foundry changes its A/V implementation** — keep that comment authoritative.
+- **Token resolution:** players → `user.character` → on-canvas token, else prototype token. GM tiles have no character, so they use a token: **widget pin (`_gmPinnedTokenId`) > auto controlled token (`_gmAutoTokenId`)**, mirroring `TalkingHeads`. `setGMAutoToken` is driven by the `gmHead` socket/`controlToken` hook on all clients.
+- **Modes & tick:** uses its own world setting `videoMode` (none/simple/advanced/hybrid/both) with the same capability-clamped bounce logic and `effectiveVol > 0.06` deadzone as `TalkingHeads`. `_wake()` snapshots `video*` settings into `_cfg` (no per-frame gets); same sleep/wake/detach idle gating. Bounce is CSS `transform` on the frame (`translateY`/`scale`/`rotate`).
+- **Viseme assets:** discovered exactly like talking heads (sheet / `-closed/-oo/-ah/-ee`, same 2×2 layout — `_loadFlipbookURLs` here must stay in sync with the other two). **Socket-first:** only GM/assistant runs `FilePicker.browse`, then broadcasts a `videoAssets` socket message; players apply received URLs via `receiveSharedTileImages` (no HEAD probes). A head with discovered visemes gets `.lva-video-has-visemes`.
+- **Clean mode:** five **client-scoped** booleans (`videoCleanName/Status/Controls/Volume/Border`) toggle CSS classes (`lva-clean-*`) on the tile to hide Foundry's A/V chrome. Applied regardless of animation mode. `videoCleanBorder` defaults `true`; the rest `false`.
+- **Never runs when A/V is disabled** — `CameraViews._canRender()` is false in `AVSettings.AV_MODES.DISABLED`, so the render hooks never fire.
+
+## Echo Guard (external-voice safety)
+
+[scripts/echo-guard.mjs](scripts/echo-guard.mjs) fixes the **double-audio** failure: a table on Discord (or any external voice) that enables Foundry A/V for the video tiles will hear a player **twice** if that player's Foundry mic is also broadcasting. The module never plays audio itself — the duplication is *Foundry's* A/V transmitting the mic.
+
+- **Setting:** `externalVoice` ("Echo Guard"), **world-scoped, `config: true`** (visible in the main settings panel — GM-enforced, table-wide). Default off.
+- **Enforcement / fan-out:** a client can only mute *itself*, but the world setting's `onChange` fires on **every** client → `EchoGuard.apply()` everywhere. On = mute own Foundry mic; off = restore. Mute uses the verified v14 API: `game.webrtc.settings.set("client", \`users.${id}.muted\`, true)` → `AVMaster#onSettingsChanged` → `client.toggleAudio`.
+- **Audio-capable gate:** Foundry refuses to broadcast audio in VIDEO-only/DISABLED modes, so enforcement and the popup only act when `game.webrtc.mode` is AUDIO or AUDIO_VIDEO (`AV_MODES` via `game.webrtc.settings.constructor`). No muting, no popup, **no screen noise** in safe configs.
+- **Snapshot/restore:** turning on snapshots each client's prior mute choice **once** (client-scoped `echoGuardSnapshot`, read from the raw persisted value so it's connection-independent and survives refresh); turning off restores it — respects what the player had, never blind-unmutes. No snapshot captured → leave as-is (don't surprise-broadcast).
+- **Re-assert:** `EchoGuard.reassert()` on `renderCameraViews`/`renderCameraPopout` re-mutes if a player un-mutes in the dock while on (that's the point).
+- **Runs even with `disableAnimations`** — wired in `ready` *before* that bail, because it's about mic broadcast, not animation.
+- **GM popup:** `DialogV2` on `ready`, GM-only, shown only when audio-capable A/V is active AND Echo Guard is off, with an inline "Enable Echo Guard" button. Re-appears each refresh while off (no "don't ask" flag — intentional); enabling stops it.
+- **AudioEngine capture (required pair):** `_acquireStream` prefers its **own `getUserMedia`** over Foundry's `localStream`, so muting the Foundry mic doesn't kill lip-sync and animation works in VIDEO-only A/V (where Foundry has no audio track). Foundry stream is a fallback only if own capture is denied.
+
 ## Animation modes
 
-A token/head `mode` is one of `simple` (bounce/wobble/stretch), `advanced` (viseme image swap), `hybrid` (advanced if viseme images exist for that token, else simple), `both` (visemes + bounce), or `none`. Effective mode is resolved **per token at tick time** based on whether viseme textures were discovered. Canvas mode setting key is `mode`; talking-head equivalent is `headMode`. The two are independent — viseme classification runs if *either* wants it.
+A token/head/tile `mode` is one of `simple` (bounce/wobble/stretch), `advanced` (viseme image swap), `hybrid` (advanced if viseme images exist for that token, else simple), `both` (visemes + bounce), or `none`. Effective mode is resolved **per surface at tick time** based on whether viseme textures were discovered. Canvas mode setting key is `mode`; talking-head equivalent is `headMode`; video-tile equivalent is `videoMode`. The three are independent — viseme classification runs if *any* wants it.
 
 **Mode-gated asset loading:** viseme/mask discovery (`_ensureTokenTextures`, head `_discoverHeadImages`) only runs when that surface's mode actually swaps images (advanced/both/hybrid). Simple/none never browse files or fire 404 probes, and the token/portrait keeps the player's original art. Changing `mode` fires `CanvasAnimator.onModeChange()` (restores swapped meshes, clears caches); `headMode` fires `TalkingHeads.rebuild()`.
 
 ## Viseme / mask asset discovery
 
 Both renderers discover sibling image files next to a token's base image, by naming convention (documented for users in [README.md](README.md)):
-- **Flipbook**: `{base}-sheet.ext` (or `_sheet`) — a 2×2 grid sliced into closed=TL, ah=TR, ee=BL, oo=BR. This exact layout is duplicated in `CanvasAnimator._loadFlipbook` (PIXI crop) and `TalkingHeads._loadFlipbookURLs` (Canvas2D → data URLs). **Keep them in sync.**
+- **Flipbook**: `{base}-sheet.ext` (or `_sheet`) — a 2×2 grid sliced into closed=TL, ah=TR, ee=BL, oo=BR. This exact layout is duplicated in `CanvasAnimator._loadFlipbook` (PIXI crop), `TalkingHeads._loadFlipbookURLs` and `VideoAnimator._loadFlipbookURLs` (Canvas2D → data URLs). **Keep all three in sync.**
 - **Individual files**: `{base}-closed/-OO/-AH/-EE.ext`. The closed frame is now a **dedicated `-closed` file** — the base token art is no longer repurposed as the mouth (falls back to original art only if `-closed` is absent).
 - **Mask**: `{base}-mask.ext` — grayscale luminance → alpha. Canvas tokens apply it as a PIXI mask sprite; talking heads apply it as a CSS `mask-image` with `mask-mode: luminance`.
 
@@ -60,7 +88,7 @@ Discovery has **two paths**: GM/assistant uses `FilePicker.browse` (directory li
 
 ## Bounce presets
 
-[scripts/animation-presets.mjs](scripts/animation-presets.mjs) holds `TOKEN_BOUNCE_PRESETS`, `HEAD_BOUNCE_PRESETS` (independent tables), and the shared `BOUNCE_PRESET_OPTIONS` dropdown list. Each preset is a full snapshot of the 7 simple-animation params (`bounceMax, angleMax, scaleAxis, scaleLow, scaleHigh, intensity, scaleDamping`). Presets are **not live** — selecting one and hitting Save in a config sub-app *copies* its values into the hidden world-scoped settings ([talking-heads-config.mjs](scripts/talking-heads-config.mjs) / [simple-animation-config.mjs](scripts/simple-animation-config.mjs), the `else` branch of `_onSave`). Editing the preset table alone changes nothing until the preset is re-selected and saved. Debug mode bypasses presets and writes the raw slider values. `scaleDamping` higher = slower/smoother scale (it sets the lerp tau); lower = snappier/wobblier. Convention: `toon` smooth, `toonWobble` same shape but lower damping.
+[scripts/animation-presets.mjs](scripts/animation-presets.mjs) holds `TOKEN_BOUNCE_PRESETS`, `HEAD_BOUNCE_PRESETS`, `VIDEO_BOUNCE_PRESETS` (three independent tables), and the shared `BOUNCE_PRESET_OPTIONS` dropdown list. Each preset is a full snapshot of the 7 simple-animation params (`bounceMax, angleMax, scaleAxis, scaleLow, scaleHigh, intensity, scaleDamping`). Presets are **not live** — selecting one and hitting Save in a config sub-app *copies* its values into the hidden world-scoped settings ([talking-heads-config.mjs](scripts/talking-heads-config.mjs) / [simple-animation-config.mjs](scripts/simple-animation-config.mjs) / [video-animator-config.mjs](scripts/video-animator-config.mjs), the `else`/preset branch of `_onSave`). Editing the preset table alone changes nothing until the preset is re-selected and saved. Debug mode bypasses presets and writes the raw slider values. `scaleDamping` higher = slower/smoother scale (it sets the lerp tau); lower = snappier/wobblier. Convention: `toon` smooth, `toonWobble` same shape but lower damping.
 
 ## Talking-head cartoon outline
 
@@ -74,20 +102,24 @@ Talking Heads (only — not canvas tokens) can draw a silhouette **outline** + a
 
 ## Config sub-app UI gating (CSS-class pattern)
 
-The two config `.hbs` forms show/hide sections by toggling form-level classes in `_onRender` (mirrors how Foundry never re-renders on every input). Pairs: `lva-debug-on`→`.lva-debug-only`, `lva-bounce-on`→`.lva-bounce-config`, `lva-outline-on`→`.lva-outline-only`, `lva-avatar-outline-on`→`.lva-avatar-outline-only`. The two outline configs (`.lva-outline-col--portrait` / `--avatar`) sit side-by-side in `.lva-outline-columns` and are **decoupled — both always apply per head**. The portrait/viseme outline is always active; only the avatar outline column is **dimmed/disabled while `lva-avatar-on` is off** (`form:not(.lva-avatar-on) .lva-outline-col--avatar`). (The old `.lva-avatar-hide` / `.lva-avatar-only` show/hide gating was removed when avatar stopped taking over the panel.) Each outline's fixed **Colour** picker is hidden (whole `.form-group`, via inline `style.display` in `_onRender`, not a form class) while its "Player Colour" auto toggle is on — the fixed colour does nothing then. Rules live in [styles/live-actors.css](styles/live-actors.css). Initial state comes from `{{#if ...}}` on the `<form>`; checkbox `change` handlers keep it live.
+The config `.hbs` forms show/hide sections by toggling form-level classes in `_onRender` (mirrors how Foundry never re-renders on every input). Pairs: `lva-debug-on`→`.lva-debug-only`, `lva-bounce-on`→`.lva-bounce-config`, `lva-outline-on`→`.lva-outline-only`, `lva-avatar-outline-on`→`.lva-avatar-outline-only`. The Video Window config uses the same `lva-bounce-on`→bounce-fieldset toggle. The two outline configs (`.lva-outline-col--portrait` / `--avatar`) sit side-by-side in `.lva-outline-columns` and are **decoupled — both always apply per head**. The portrait/viseme outline is always active; only the avatar outline column is **dimmed/disabled while `lva-avatar-on` is off** (`form:not(.lva-avatar-on) .lva-outline-col--avatar`). (The old `.lva-avatar-hide` / `.lva-avatar-only` show/hide gating was removed when avatar stopped taking over the panel.) Each outline's fixed **Colour** picker is hidden (whole `.form-group`, via inline `style.display` in `_onRender`, not a form class) while its "Player Colour" auto toggle is on — the fixed colour does nothing then. Rules live in [styles/live-actors.css](styles/live-actors.css). Initial state comes from `{{#if ...}}` on the `<form>`; checkbox `change` handlers keep it live.
+
+**Field hints are `(?)` tooltips, not inline text.** Every per-field/per-section hint in our own `.hbs` configs is a `<i class="fa-solid fa-circle-question lva-help" data-tooltip-html="…" data-tooltip-direction="UP" data-tooltip-class="lva-help-tip">` marker in the `<label>`/`<legend>` — no `<p class="hint">` (it bloated the panels). Foundry's tooltip manager renders `data-tooltip-html` (cleaned HTML, so `<ul>/<li>/<strong>/<br>` work) on hover; `lva-help-tip` widens/left-aligns it via `#tooltip.lva-help-tip` (id-specificity beats core). `.lva-help` deliberately sets **no** `cursor`. Keep hints short. This is only for our configs — Foundry-rendered settings (registerMenu/register hints) keep native hint text.
 
 ## Subsystem map
 
 | File | Role |
 | --- | --- |
 | [live-actors.mjs](scripts/live-actors.mjs) | Hooks, settings registration, orchestration |
-| [audio-engine.mjs](scripts/audio-engine.mjs) | Mic capture, RMS volume, viseme classification |
+| [audio-engine.mjs](scripts/audio-engine.mjs) | Mic capture (own `getUserMedia`, independent of Foundry's A/V track), RMS volume, viseme classification |
 | [canvas-animator.mjs](scripts/canvas-animator.mjs) | PIXI token mesh animation, texture/mask swap, speaking ring/bubble overlays |
 | [talking-heads.mjs](scripts/talking-heads.mjs) | Floating DOM portraits, drag-to-position (GM), per-scene position flags, cartoon outline + avatar mode |
-| [animation-presets.mjs](scripts/animation-presets.mjs) | Token/head bounce preset tables + dropdown options (copied into settings on Save) |
-| [socket-handler.mjs](scripts/socket-handler.mjs) | `module.live-actors` socket emit/receive, throttle |
+| [video-animator.mjs](scripts/video-animator.mjs) | Animates Foundry A/V camera tiles (camera-off) — injected DOM `<img>`, viseme swap, clean-mode chrome hiding |
+| [echo-guard.mjs](scripts/echo-guard.mjs) | "Echo Guard" external-voice mode — mutes every client's Foundry mic (world-setting fan-out) so Discord + A/V tables aren't doubled; audio-capable gate, snapshot/restore, GM opt-in popup |
+| [animation-presets.mjs](scripts/animation-presets.mjs) | Token/head/video bounce preset tables + dropdown options (copied into settings on Save) |
+| [socket-handler.mjs](scripts/socket-handler.mjs) | `module.live-actors` socket emit/receive, throttle (state, gmHead, videoAssets) |
 | [speaker-widget.mjs](scripts/speaker-widget.mjs) | ApplicationV2 GM toolbar picker to "pin" an NPC token as speaker |
-| [simple-animation-config.mjs](scripts/simple-animation-config.mjs) / [talking-heads-config.mjs](scripts/talking-heads-config.mjs) | GM-only config sub-apps that write the hidden world-scoped settings |
+| [simple-animation-config.mjs](scripts/simple-animation-config.mjs) / [talking-heads-config.mjs](scripts/talking-heads-config.mjs) / [video-animator-config.mjs](scripts/video-animator-config.mjs) | GM-only config sub-apps that write the hidden world-scoped settings |
 
 ## Conventions & gotchas
 

@@ -45,22 +45,29 @@ export class AudioEngine {
     // decouples animation from Foundry's mic: muting the Foundry mic (Echo Guard /
     // external-voice mode) no longer kills lip-sync, and animation still works in
     // VIDEO-only A/V where Foundry captures no audio track at all. See echo-guard.mjs.
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-      ui.notifications.info("Live Actors: Microphone access granted.");
-      return stream;
-    } catch (err) {
-      console.error("Live Actors |", err);
+    if (navigator.mediaDevices?.getUserMedia) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+        ui.notifications.info("Live Actors: Microphone access granted.");
+        return stream;
+      } catch (err) {
+        console.error("Live Actors |", err);
+      }
+    } else {
+      console.error("Live Actors | navigator.mediaDevices unavailable (insecure context — needs HTTPS or localhost).");
     }
 
-    // Fallback only if our own capture was denied: reuse Foundry's A/V stream.
+    // Fallback only if our own capture was denied/unavailable: reuse Foundry's A/V stream.
     const foundryStream = game.webrtc?.client?.localStream ?? null;
     if (foundryStream) {
       ui.notifications.info("Live Actors: Using Foundry A/V microphone stream (fallback).");
       return foundryStream;
     }
 
-    ui.notifications.warn("Live Actors: Could not access microphone. Check browser permissions.");
+    const insecure = !navigator.mediaDevices?.getUserMedia;
+    ui.notifications.warn(insecure
+      ? "Live Actors: Microphone blocked — connection isn't secure (HTTPS required). Ask your GM to serve Foundry over HTTPS."
+      : "Live Actors: Could not access microphone. Check browser permissions.");
     return null;
   }
 
