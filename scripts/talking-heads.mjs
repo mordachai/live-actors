@@ -1,4 +1,5 @@
 import { AudioEngine } from "./audio-engine.mjs";
+import { browseFolder } from "./asset-cache.mjs";
 
 const SOCKET_EVENT = "module.live-actors";
 const LERP = 0.2;
@@ -6,6 +7,9 @@ const LERP = 0.2;
 export class TalkingHeads {
   static _container       = null;
   static _heads           = new Map(); // userId → HTMLElement
+  // userId → { frame, img } — set at _createHead() build time so _tick() (rAF,
+  // per animated head per frame) never runs a querySelector for its two children.
+  static _headParts       = new Map();
   static _speakingTimers  = new Map(); // userId → setTimeout id
   static _dragState       = null;
   static _gmPinnedTokenId = null;  // explicit SpeakerWidget pin (local GM only)
@@ -26,6 +30,12 @@ export class TalkingHeads {
   static _enabled         = true;
   static _waveSmooth      = 0;      // EMA of mic waveform peak — smooths head scale
   static _lastTime        = 0;      // prev rAF timestamp, for framerate-independent lerp
+  static _cfg             = {};     // settings snapshot taken at wake time (no per-frame gets)
+  // Cached settings read on every socket message (update()/_setRestImage()) — refreshed
+  // by rebuild() (headMode) and the headIndicatorStyle onChange, not read per-message.
+  static _headMode           = "hybrid";
+  static _headIndicatorStyle = "none";
+  static _rebuildGen         = 0;   // generation counter — guards rebuild() against overlapping runs
 
   // ── Lifecycle ────────────────────────────────────────────────────
 
@@ -63,8 +73,27 @@ export class TalkingHeads {
     if (TalkingHeads._rafId === null) {
       TalkingHeads._waveSmooth = 0;
       TalkingHeads._lastTime   = 0;
+      TalkingHeads._wake();
       TalkingHeads._rafId = requestAnimationFrame(TalkingHeads._tick);
     }
+  }
+
+  // Snapshots all world-scoped animation settings once at wake time so the tick
+  // never calls game.settings.get() — matches CanvasAnimator/VideoAnimator.
+  static _wake() {
+    const get = k => game.settings.get("live-actors", k);
+    const scaleDamping = get("headScaleDamping");
+    TalkingHeads._cfg = {
+      headMode:     get("headMode"),
+      bounceMax:    get("headBounceMax"),
+      angleMax:     get("headAngleMax"),
+      scaleAxis:    get("headScaleAxis"),
+      scaleHigh:    get("headScaleHigh"),
+      intensity:    get("headIntensity"),
+      scaleDamping,
+      scaleTau:     scaleDamping <= 0 ? 0 : -(1000 / 60) / Math.log(Math.min(scaleDamping, 0.999)),
+      mirrorMap:    get("headMirrorMap"),
+    };
   }
 
   static destroy() {
@@ -75,9 +104,13 @@ export class TalkingHeads {
     TalkingHeads._container?.remove();
     TalkingHeads._container = null;
     TalkingHeads._heads.clear();
+    TalkingHeads._headParts.clear();
     TalkingHeads._speakingTimers.forEach(t => clearTimeout(t));
     TalkingHeads._speakingTimers.clear();
+    _revokeBlobImages(TalkingHeads._headImages);
+    _revokeBlobImages(TalkingHeads._sharedHeadImages);
     TalkingHeads._headImages.clear();
+    TalkingHeads._sharedHeadImages.clear();
     TalkingHeads._imagesPending.clear();
     TalkingHeads._targets.clear();
     TalkingHeads._lerped.clear();
@@ -85,7 +118,19 @@ export class TalkingHeads {
 
   // ── Rebuild ───────────────────────────────────────────────────────
 
+  // Debounced entry point for settings onChange handlers — saving the Talking
+  // Heads config fires ~15 onChange callbacks back-to-back; without this each
+  // one triggers a full async rebuild, and overlapping runs can interleave
+  // clear→await→append into duplicate/orphaned head elements (see rebuild()'s
+  // generation guard for the second half of that fix).
+  static requestRebuild = foundry.utils.debounce(() => TalkingHeads.rebuild(), 100);
+
   static async rebuild() {
+    // Generation guard: bail after any await if a newer rebuild has since
+    // started. Catches races the debounce above can't (e.g. a scene sync
+    // landing mid-rebuild alongside a config save).
+    const myGen = ++TalkingHeads._rebuildGen;
+
     const container = TalkingHeads._container;
     if (!container) return;
 
@@ -93,14 +138,26 @@ export class TalkingHeads {
     TalkingHeads._speakingTimers.clear();
     container.innerHTML = "";
     TalkingHeads._heads.clear();
+    TalkingHeads._headParts.clear();
     TalkingHeads._targets.clear();
     TalkingHeads._lerped.clear();
+    // Revoke blob URLs this rebuild owns exclusively — skip any images object
+    // still referenced by _sharedHeadImages (the broadcast cache other clients
+    // reuse across rebuilds; see _discoverHeadImages) so it isn't left pointing
+    // at revoked URLs.
+    for (const [userId, images] of TalkingHeads._headImages) {
+      if (images !== TalkingHeads._sharedHeadImages.get(userId)) _revokeImages(images);
+    }
     TalkingHeads._headImages.clear();
     TalkingHeads._imagesPending.clear();
 
     const mode = game.settings.get("live-actors", "talkingHeads");
     container.className = `lva-mode-${mode}`;
-    if (game.settings.get("live-actors", "headMode") === "none") return;
+    // Refresh the per-message caches used by update()/_setRestImage() so socket
+    // handlers never call game.settings.get() 15x/sec per speaker.
+    TalkingHeads._headMode           = game.settings.get("live-actors", "headMode");
+    TalkingHeads._headIndicatorStyle = game.settings.get("live-actors", "headIndicatorStyle");
+    if (TalkingHeads._headMode === "none") return;
     const useAvatar = game.settings.get("live-actors", "headUseAvatar");
 
     const speakers = TalkingHeads._collectSpeakers();
@@ -124,6 +181,7 @@ export class TalkingHeads {
           info.hasAvatar = TalkingHeads._sharedAvatar.get(info.userId) === true;
         });
       }
+      if (myGen !== TalkingHeads._rebuildGen) return; // superseded during the await
     }
 
     speakers.forEach((info, idx) => {
@@ -131,9 +189,9 @@ export class TalkingHeads {
       container.appendChild(head);
       TalkingHeads._heads.set(info.userId, head);
 
-      const pos = saved[info.userId];
-      head.style.left = `${pos?.x ?? 10}px`;
-      head.style.top  = `${pos?.y ?? (60 + idx * 110)}px`;
+      const pos = _posToPx(saved[info.userId]) ?? _clampToViewport(10, 60 + idx * 110);
+      head.style.left = `${pos.x}px`;
+      head.style.top  = `${pos.y}px`;
     });
   }
 
@@ -149,13 +207,10 @@ export class TalkingHeads {
     const lastDot   = filename.lastIndexOf(".");
     const base      = lastDot >= 0 ? filename.slice(0, lastDot) : filename;
 
-    try {
-      // Directory listing — matches "-avatar" regardless of extension/case.
-      const result = await foundry.applications.apps.FilePicker.implementation.browse("data", folder || "/");
-      const files = result.files ?? [];
-      const re = new RegExp(`^${_escRegex(base)}-avatar\\.[^.]+$`, "i");
-      return files.some(f => re.test(f.includes("/") ? f.slice(f.lastIndexOf("/") + 1) : f));
-    } catch { return false; /* no FILES_BROWSE permission — result arrives via socket */ }
+    // Directory listing (shared cache) — matches "-avatar" regardless of extension/case.
+    const files = await browseFolder(folder);
+    const re = new RegExp(`^${_escRegex(base)}-avatar\\.[^.]+$`, "i");
+    return files.some(f => re.test(f.includes("/") ? f.slice(f.lastIndexOf("/") + 1) : f));
   }
 
   // Receive avatar existence broadcast by a privileged client. Cache it so the next
@@ -168,7 +223,7 @@ export class TalkingHeads {
     if (!head) return;
     // Rebuild only if the head's current render disagrees with the new truth.
     const isAvatarNow = head.classList.contains("lva-head--avatar");
-    if (isAvatarNow !== (hasAvatar === true)) TalkingHeads.rebuild();
+    if (isAvatarNow !== (hasAvatar === true)) TalkingHeads.requestRebuild();
   }
 
   // ── Speaker list ─────────────────────────────────────────────────
@@ -195,7 +250,7 @@ export class TalkingHeads {
     if (gm && canvas.ready) {
       const gmTokenId = TalkingHeads._gmPinnedTokenId ?? TalkingHeads._gmAutoTokenId;
       if (gmTokenId) {
-        const t = canvas.tokens?.placeables?.find(t => t.id === gmTokenId);
+        const t = canvas.tokens?.get(gmTokenId);
         if (t) list.push({ userId: gm.id, name: t.document.name, img: t.document.texture.src });
       }
     }
@@ -216,10 +271,12 @@ export class TalkingHeads {
     });
   }
 
-  // Called on player clients via socket when GM controls/decontrols a token
+  // Called on player clients via socket when GM controls/decontrols a token.
+  // Debounced — the GM clicking through tokens fires controlToken rapidly, and
+  // each click otherwise triggered a full async rebuild (browse spam + races).
   static setGMAutoToken(tokenId) {
     TalkingHeads._gmAutoTokenId = tokenId ?? null;
-    TalkingHeads.rebuild();
+    TalkingHeads.requestRebuild();
   }
 
   // Receive head images broadcast by a privileged client (GM/assistant). Cache them
@@ -419,39 +476,31 @@ export class TalkingHeads {
       TalkingHeads._discoverHeadImages(info.userId, info.img);
     }
 
+    TalkingHeads._headParts.set(info.userId, { frame, img });
     return head;
   }
 
   // ── Animation tick (rAF) ─────────────────────────────────────────
 
   static _tick(ts) {
-    const get = k => game.settings.get("live-actors", k);
-    // All animation params are world-scoped → same values for every client
-    const headMode     = get("headMode");
-    const bounceMax    = get("headBounceMax");    // % of frame height
-    const angleMax     = get("headAngleMax");
-    const scaleAxis    = get("headScaleAxis");
-    const scaleHigh    = get("headScaleHigh");
-    const intensity    = get("headIntensity");
-    const scaleDamping = get("headScaleDamping");
-    const mirrorMap    = get("headMirrorMap");
+    // All animation params are world-scoped → same values for every client.
+    // Snapshotted at wake time (see _wake()) — no per-frame settings reads.
+    const cfg = TalkingHeads._cfg;
+    const { headMode, bounceMax, angleMax, scaleAxis, scaleHigh, intensity, scaleTau, mirrorMap } = cfg;
     const now          = Date.now();
 
-    // Framerate-independent scale smoothing: damping → tau → alpha
+    // Framerate-independent scale smoothing: tau (hoisted into cfg) → alpha
     const t            = ts ?? performance.now();
     const delta        = TalkingHeads._lastTime ? (t - TalkingHeads._lastTime) : (1000 / 60);
     TalkingHeads._lastTime = t;
-    const scaleTau     = scaleDamping <= 0 ? 0 : -(1000 / 60) / Math.log(Math.min(scaleDamping, 0.999));
     const scaleAlpha   = scaleTau <= 0 ? 1 : 1 - Math.exp(-delta / scaleTau);
     let   waveFrame    = false;
 
     for (const [userId, target] of TalkingHeads._targets) {
-      const head = TalkingHeads._heads.get(userId);
-      if (!head) continue;
-
-      const frame = head.querySelector(".lva-head-frame");
-      const img   = head.querySelector(".lva-head-img");
-      if (!frame || !img) continue;
+      const head  = TalkingHeads._heads.get(userId);
+      const parts = TalkingHeads._headParts.get(userId);
+      if (!head || !parts) continue;
+      const { frame, img } = parts;
 
       let s = TalkingHeads._lerped.get(userId);
       if (!s) {
@@ -556,7 +605,7 @@ export class TalkingHeads {
     const img = head.querySelector(".lva-head-img");
     if (!img) return;
     if (img.dataset.curViseme === "__rest__") return;
-    const headMode     = game.settings.get("live-actors", "headMode");
+    const headMode     = TalkingHeads._headMode;
     const wantsVisemes = headMode === "advanced" || headMode === "hybrid" || headMode === "both";
     const hasVisemes   = head.classList.contains("lva-head--has-visemes");
     const images       = TalkingHeads._headImages.get(userId);
@@ -580,12 +629,12 @@ export class TalkingHeads {
     // Store for the rAF tick
     TalkingHeads._targets.set(userId, state);
 
-    const headMode     = game.settings.get("live-actors", "headMode");
+    const headMode     = TalkingHeads._headMode;
     const wantsVisemes = headMode === "advanced" || headMode === "hybrid" || headMode === "both";
     const hasVisemes   = head.classList.contains("lva-head--has-visemes");
     const doVisemes    = wantsVisemes && state.viseme !== undefined && hasVisemes;
 
-    const headIndicator = game.settings.get("live-actors", "headIndicatorStyle");
+    const headIndicator = TalkingHeads._headIndicatorStyle;
     head.classList.toggle("lva-head--show-ring",   headIndicator === "ring"   || headIndicator === "both");
     head.classList.toggle("lva-head--show-bubble", headIndicator === "bubble" || headIndicator === "both");
 
@@ -633,36 +682,32 @@ export class TalkingHeads {
     const filename  = lastSlash >= 0 ? imgPath.slice(lastSlash + 1) : imgPath;
     const lastDot   = filename.lastIndexOf(".");
     const base      = lastDot >= 0 ? filename.slice(0, lastDot) : filename;
-    const ext       = lastDot >= 0 ? filename.slice(lastDot) : "";
 
-    let images = null;
+    // GM path: directory listing (shared cache), avoids 404 noise. Players get []
+    // (no FILES_BROWSE permission) and wait for the headAssets socket broadcast.
+    // Broadcast discovered paths so remote clients can load without browsing.
+    const files = await browseFolder(folder);
+    let images;
 
-    try {
-      // GM path: directory listing, avoids 404 noise.
-      // Broadcast discovered paths so remote clients can load without browsing.
-      const result = await foundry.applications.apps.FilePicker.implementation.browse("data", folder || "/");
-      const files = result.files ?? [];
-
-      const sheetRe = new RegExp(`^${_escRegex(base)}[-_]sheet\\.[^.]+$`, "i");
-      const sheetFile = files.find(f => sheetRe.test(f.includes("/") ? f.slice(f.lastIndexOf("/") + 1) : f));
-      if (sheetFile) {
-        game.socket.emit(SOCKET_EVENT, { type: "headAssets", userId, sheet: sheetFile });
-        images = await TalkingHeads._loadFlipbookURLs(sheetFile);
-      } else {
-        images = {};
-        const rawPaths = {};
-        for (const viseme of ["closed", "oo", "ah", "ee"]) {
-          const re = new RegExp(`^${_escRegex(base)}[ \\-_]${viseme}\\.[^.]+$`, "i");
-          const match = files.find(f => re.test(f.includes("/") ? f.slice(f.lastIndexOf("/") + 1) : f));
-          if (match) {
-            images[viseme] = _route(match);
-            rawPaths[viseme] = match;
-          }
+    const sheetRe = new RegExp(`^${_escRegex(base)}[-_]sheet\\.[^.]+$`, "i");
+    const sheetFile = files.find(f => sheetRe.test(f.includes("/") ? f.slice(f.lastIndexOf("/") + 1) : f));
+    if (sheetFile) {
+      game.socket.emit(SOCKET_EVENT, { type: "headAssets", userId, sheet: sheetFile });
+      images = await TalkingHeads._loadFlipbookURLs(sheetFile);
+    } else {
+      images = {};
+      const rawPaths = {};
+      for (const viseme of ["closed", "oo", "ah", "ee"]) {
+        const re = new RegExp(`^${_escRegex(base)}[ \\-_]${viseme}\\.[^.]+$`, "i");
+        const match = files.find(f => re.test(f.includes("/") ? f.slice(f.lastIndexOf("/") + 1) : f));
+        if (match) {
+          images[viseme] = _route(match);
+          rawPaths[viseme] = match;
         }
-        if (Object.keys(rawPaths).length > 0)
-          game.socket.emit(SOCKET_EVENT, { type: "headAssets", userId, paths: rawPaths });
       }
-    } catch { /* no FILES_BROWSE permission — images will arrive via socket */ }
+      if (Object.keys(rawPaths).length > 0)
+        game.socket.emit(SOCKET_EVENT, { type: "headAssets", userId, paths: rawPaths });
+    }
 
     TalkingHeads._headImages.set(userId, images ?? {});
     TalkingHeads._imagesPending.delete(userId);
@@ -680,7 +725,9 @@ export class TalkingHeads {
     }
   }
 
-  // Crop a 2×2 flipbook sheet into four data-URL images using Canvas 2D.
+  // Crop a 2×2 flipbook sheet into four blob-URL images using Canvas 2D. Blob
+  // URLs (vs. data URLs) avoid the ~37% base64 memory overhead and are decoded
+  // once instead of re-parsed on every img.src swap. Revoked in rebuild()/destroy().
   // Layout matches CanvasAnimator: closed=top-left, ah=top-right, ee=bottom-left, oo=bottom-right
   static async _loadFlipbookURLs(sheetPath) {
     const url = _route(sheetPath);
@@ -697,16 +744,21 @@ export class TalkingHeads {
       cv.width  = hw;
       cv.height = hh;
       cv.getContext("2d").drawImage(img, sx, sy, hw, hh, 0, 0, hw, hh);
-      result[key] = cv.toDataURL();
+      const blob = await new Promise(res => cv.toBlob(res));
+      result[key] = URL.createObjectURL(blob);
     }
     return result;
   }
 
   // ── Position management ──────────────────────────────────────────
 
-  static setPosition(userId, x, y) {
+  // xPct/yPct are fractions of the viewport (0..1) — see _toPct/_posToPx below.
+  // Resolved against THIS client's viewport size, so a head is never off-screen
+  // regardless of who last dragged it or what resolution they were on.
+  static setPosition(userId, xPct, yPct) {
     const head = TalkingHeads._heads.get(userId);
     if (!head) return;
+    const { x, y } = _clampToViewport(xPct * window.innerWidth, yPct * window.innerHeight);
     head.style.left = `${x}px`;
     head.style.top  = `${y}px`;
   }
@@ -736,8 +788,9 @@ export class TalkingHeads {
   static _onDragMove(e) {
     const d = TalkingHeads._dragState;
     if (!d) return;
-    d.el.style.left = `${d.origLeft + e.clientX - d.startX}px`;
-    d.el.style.top  = `${d.origTop  + e.clientY - d.startY}px`;
+    const { x, y } = _clampToViewport(d.origLeft + e.clientX - d.startX, d.origTop + e.clientY - d.startY);
+    d.el.style.left = `${x}px`;
+    d.el.style.top  = `${y}px`;
   }
 
   static async _onDragEnd(e) {
@@ -747,26 +800,83 @@ export class TalkingHeads {
     TalkingHeads._dragState = null;
     if (!d) return;
 
-    const x = d.origLeft + e.clientX - d.startX;
-    const y = d.origTop  + e.clientY - d.startY;
+    const clamped     = _clampToViewport(d.origLeft + e.clientX - d.startX, d.origTop + e.clientY - d.startY);
+    const { xPct, yPct } = _toPct(clamped.x, clamped.y);
 
+    // Store as viewport-relative percentages, not absolute pixels — a head
+    // dragged on the GM's 4K monitor should still land on-screen for a player
+    // on a laptop. Migrated from the old {x,y} px format on read (_posToPx).
     const positions = foundry.utils.deepClone(
       canvas.scene?.getFlag("live-actors", "headPositions") ?? {}
     );
-    positions[d.userId] = { x, y };
+    positions[d.userId] = { xPct, yPct };
     await canvas.scene?.setFlag("live-actors", "headPositions", positions);
 
     game.socket.emit(SOCKET_EVENT, {
       type: "headPosition",
       userId: game.user.id,
       targetUserId: d.userId,
-      x, y,
+      xPct, yPct,
     });
   }
 }
 
 function _escRegex(s) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// Revoke every blob: URL in a single {closed?, oo?, ah?, ee?} images object
+// (non-blob entries — routed file paths — are left alone).
+function _revokeImages(images) {
+  if (!images) return;
+  for (const v of Object.values(images)) {
+    if (typeof v === "string" && v.startsWith("blob:")) URL.revokeObjectURL(v);
+  }
+}
+
+function _revokeBlobImages(map) {
+  for (const images of map.values()) _revokeImages(images);
+}
+
+// ── Head position storage (viewport-relative percentages) ─────────
+//
+// Positions used to be saved as absolute pixels from the GM's drag, so a head
+// dragged on a large monitor could land half off-screen for a player on a
+// smaller one. Stored/broadcast as {xPct, yPct} fractions of the viewport
+// instead, resolved against each client's own window size.
+
+const HEAD_EDGE_MARGIN = 40; // px of the head kept on-screen at every edge
+
+function _clampToViewport(x, y) {
+  const maxX = Math.max(0, window.innerWidth  - HEAD_EDGE_MARGIN);
+  const maxY = Math.max(0, window.innerHeight - HEAD_EDGE_MARGIN);
+  return {
+    x: Math.min(Math.max(x, 0), maxX),
+    y: Math.min(Math.max(y, 0), maxY),
+  };
+}
+
+function _toPct(x, y) {
+  return {
+    xPct: window.innerWidth  > 0 ? x / window.innerWidth  : 0,
+    yPct: window.innerHeight > 0 ? y / window.innerHeight : 0,
+  };
+}
+
+// Resolves a saved position entry to on-screen px for the CURRENT viewport, or
+// null if there's nothing saved. Handles both the new {xPct, yPct} format and
+// the legacy {x, y} absolute-px format (migrated by re-clamping into the
+// current viewport rather than trusting stale coordinates from an unknown
+// screen size).
+function _posToPx(pos) {
+  if (pos == null) return null;
+  if (pos.xPct != null && pos.yPct != null) {
+    return _clampToViewport(pos.xPct * window.innerWidth, pos.yPct * window.innerHeight);
+  }
+  if (pos.x != null && pos.y != null) {
+    return _clampToViewport(pos.x, pos.y);
+  }
+  return null;
 }
 
 // Build a route-aware URL for a data path. Foundry can run behind a route prefix

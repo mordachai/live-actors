@@ -124,14 +124,21 @@ export class EchoGuard {
 
   // ── GM popup ────────────────────────────────────────────────────────────────
 
+  // sessionStorage (not a persisted setting) — "Not now" suppresses the popup
+  // until the GM's next login/session, but a GM who deliberately keeps Echo
+  // Guard off intentionally still sees it again after actually leaving and
+  // coming back, unlike a permanent "don't ask" flag.
+  static _DISMISS_KEY = "live-actors.echoGuardDismissed";
+
   // Shown on ready, GM only, when audio-capable A/V is active AND Echo Guard is
   // OFF — so the GM consciously opts in. No popup when audio can't leak (no risk →
-  // no noise) or when Echo Guard is already on. Re-appears each refresh while it
-  // stays off; enabling it (here or in settings) stops the prompt.
+  // no noise), when Echo Guard is already on, or when dismissed earlier this
+  // session. Enabling it (here or in settings) stops the prompt for good.
   static async maybePromptGM() {
     if (!game.user.isGM) return;
     if (EchoGuard._enabled()) return;
     if (!EchoGuard._audioCapable()) return;
+    if (sessionStorage.getItem(EchoGuard._DISMISS_KEY) === "1") return;
 
     let choice;
     try {
@@ -152,8 +159,9 @@ export class EchoGuard {
         rejectClose: false,
       });
     } catch {
-      return; // dismissed
+      choice = null; // dismissed via window close
     }
     if (choice === "enable") await game.settings.set("live-actors", "externalVoice", true);
+    else sessionStorage.setItem(EchoGuard._DISMISS_KEY, "1");
   }
 }

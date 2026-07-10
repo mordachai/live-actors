@@ -1,5 +1,6 @@
 import { AudioEngine } from "./audio-engine.mjs";
 import { SpeakerWidget } from "./speaker-widget.mjs";
+import { browseFolder } from "./asset-cache.mjs";
 
 const LERP = 0.2;
 
@@ -91,7 +92,7 @@ export class CanvasAnimator {
   // their original texture and drop viseme caches so the next speech re-discovers.
   static onModeChange() {
     for (const [tokenId, orig] of CanvasAnimator._originalTextures) {
-      const token = canvas?.tokens?.placeables?.find(t => t.id === tokenId);
+      const token = canvas?.tokens?.get(tokenId);
       if (token?.mesh) {
         if (orig?.valid) token.mesh.texture = orig;
         const s = CanvasAnimator._lerped.get(tokenId);
@@ -100,7 +101,7 @@ export class CanvasAnimator {
     }
     // Drop any masks (custom or default circular) — meshes leave viseme mode.
     for (const [tokenId, ms] of CanvasAnimator._maskSprites) {
-      const token = canvas?.tokens?.placeables?.find(t => t.id === tokenId);
+      const token = canvas?.tokens?.get(tokenId);
       if (token?.mesh) token.mesh.mask = null;
       ms.parent?.removeChild(ms);
       ms.destroy();
@@ -185,7 +186,7 @@ export class CanvasAnimator {
     // ahead of tokenAssets), the load above returned {} — retrigger once using them.
     if (!CanvasAnimator._hasVisemes(tokenId) && CanvasAnimator._sharedPaths.has(imgPath)) {
       CanvasAnimator._tokenTextures.delete(tokenId);
-      const t = canvas?.tokens?.placeables?.find(t => t.id === tokenId);
+      const t = canvas?.tokens?.get(tokenId);
       if (t) _ensureTokenTextures(t);
       return; // the retriggered load will call _applyRestFrame
     }
@@ -200,7 +201,7 @@ export class CanvasAnimator {
   // -closed rest frame — setting the texture here (before the lerp state captures
   // the pristine scale) is what dislocated swapped frames.
   static _applyRestFrame(tokenId) {
-    const token = canvas?.tokens?.placeables?.find(t => t.id === tokenId);
+    const token = canvas?.tokens?.get(tokenId);
     if (!token?.mesh) return;
     if (!CanvasAnimator._originalTextures.has(tokenId)) {
       CanvasAnimator._originalTextures.set(tokenId, token.mesh.texture);
@@ -267,40 +268,36 @@ export class CanvasAnimator {
     const base      = lastDot >= 0 ? filename.slice(0, lastDot) : filename;
     const ext       = lastDot >= 0 ? filename.slice(lastDot) : "";
 
-    // Preferred path: directory listing — finds files regardless of case/separator,
-    // no failed HTTP probes. Requires FILES_BROWSE permission (GM/assistant).
-    // Broadcast discovered paths so remote clients can load them without browsing.
-    try {
-      const result = await foundry.applications.apps.FilePicker.implementation.browse("data", folder || "/");
-      const files = result.files ?? [];
+    // Preferred path: directory listing (shared cache — see asset-cache.mjs) —
+    // finds files regardless of case/separator, no failed HTTP probes. Requires
+    // FILES_BROWSE permission (GM/assistant); browseFolder resolves to [] on
+    // failure. Broadcast discovered paths so remote clients load without browsing.
+    const files = await browseFolder(folder);
 
-      // Check for flipbook sheet first ({base}-sheet.ext or {base}_sheet.ext)
-      const sheetRe = new RegExp(`^${_escapeRegex(base)}[-_]sheet\\.[^.]+$`, "i");
-      const sheetFile = files.find(f => sheetRe.test(f.includes("/") ? f.slice(f.lastIndexOf("/") + 1) : f));
-      if (sheetFile) {
-        game.socket.emit("module.live-actors", { type: "tokenAssets", imgPath, sheet: sheetFile });
-        return await CanvasAnimator._loadFlipbook(sheetFile);
+    // Check for flipbook sheet first ({base}-sheet.ext or {base}_sheet.ext)
+    const sheetRe = new RegExp(`^${_escapeRegex(base)}[-_]sheet\\.[^.]+$`, "i");
+    const sheetFile = files.find(f => sheetRe.test(f.includes("/") ? f.slice(f.lastIndexOf("/") + 1) : f));
+    if (sheetFile) {
+      game.socket.emit("module.live-actors", { type: "tokenAssets", imgPath, sheet: sheetFile });
+      return await CanvasAnimator._loadFlipbook(sheetFile);
+    }
+
+    // Individual viseme files — including a dedicated -closed frame so the base
+    // token art is never repurposed as the mouth.
+    const textures = {};
+    const foundPaths = {};
+    for (const viseme of ["closed", "oo", "ah", "ee"]) {
+      const re = new RegExp(`^${_escapeRegex(base)}[ \\-_]${viseme}\\.[^.]+$`, "i");
+      const match = files.find(f => re.test(f.includes("/") ? f.slice(f.lastIndexOf("/") + 1) : f));
+      if (match) {
+        foundPaths[viseme] = match;
+        try { textures[viseme] = await foundry.canvas.loadTexture(match); }
+        catch { textures[viseme] = null; }
       }
-
-      // Individual viseme files — including a dedicated -closed frame so the base
-      // token art is never repurposed as the mouth.
-      const textures = {};
-      const foundPaths = {};
-      for (const viseme of ["closed", "oo", "ah", "ee"]) {
-        const re = new RegExp(`^${_escapeRegex(base)}[ \\-_]${viseme}\\.[^.]+$`, "i");
-        const match = files.find(f => re.test(f.includes("/") ? f.slice(f.lastIndexOf("/") + 1) : f));
-        if (match) {
-          foundPaths[viseme] = match;
-          try { textures[viseme] = await foundry.canvas.loadTexture(match); }
-          catch { textures[viseme] = null; }
-        }
-      }
-      if (Object.keys(foundPaths).length > 0)
-        game.socket.emit("module.live-actors", { type: "tokenAssets", imgPath, visemes: foundPaths });
-      return textures;
-    } catch { /* no FILES_BROWSE permission — return empty; paths will arrive via socket */ }
-
-    return {};
+    }
+    if (Object.keys(foundPaths).length > 0)
+      game.socket.emit("module.live-actors", { type: "tokenAssets", imgPath, visemes: foundPaths });
+    return textures;
   }
 
   // Build four cropped PIXI.Textures from a 2×2 sprite sheet.
@@ -340,19 +337,13 @@ export class CanvasAnimator {
     const filename  = lastSlash >= 0 ? imgPath.slice(lastSlash + 1) : imgPath;
     const lastDot   = filename.lastIndexOf(".");
     const base      = lastDot >= 0 ? filename.slice(0, lastDot) : filename;
-    const ext       = lastDot >= 0 ? filename.slice(lastDot) : "";
 
-    try {
-      const result = await foundry.applications.apps.FilePicker.implementation.browse("data", folder || "/");
-      const files = result.files ?? [];
-      const re = new RegExp(`^${_escapeRegex(base)}[-_]mask\\.[^.]+$`, "i");
-      const match = files.find(f => re.test(f.includes("/") ? f.slice(f.lastIndexOf("/") + 1) : f));
-      if (match)
-        game.socket.emit("module.live-actors", { type: "tokenAssets", imgPath, mask: match });
-      return match ?? null;
-    } catch { /* no FILES_BROWSE permission — mask path will arrive via socket */ }
-
-    return null;
+    const files = await browseFolder(folder);
+    const re = new RegExp(`^${_escapeRegex(base)}[-_]mask\\.[^.]+$`, "i");
+    const match = files.find(f => re.test(f.includes("/") ? f.slice(f.lastIndexOf("/") + 1) : f));
+    if (match)
+      game.socket.emit("module.live-actors", { type: "tokenAssets", imgPath, mask: match });
+    return match ?? null;
   }
 
   // Load a grayscale mask image and convert luminance → alpha, returning a PIXI.Texture.
@@ -381,7 +372,7 @@ export class CanvasAnimator {
   static cleanupToken(tokenId) {
     const s = CanvasAnimator._lerped.get(tokenId);
     if (s) {
-      const token = canvas?.tokens?.placeables?.find(t => t.id === tokenId);
+      const token = canvas?.tokens?.get(tokenId);
       if (token?.mesh) {
         // Restore the pristine (original-texture) scale — baseScaleX may have been
         // refit to a swapped viseme/closed frame.
@@ -415,6 +406,18 @@ export class CanvasAnimator {
     if (CanvasAnimator._localTokenId === tokenId) CanvasAnimator._localTokenId = null;
   }
 
+  // Call when a token's artwork changes mid-session (updateToken, texture.src
+  // diff — see live-actors.mjs). Viseme/mask textures and the swap-fit ratio are
+  // keyed by tokenId and discovered from the OLD texture.src; without this the
+  // module keeps swapping the stale frames onto the new art forever, since
+  // cleanupToken() alone doesn't touch these discovery caches.
+  static invalidateTokenArt(tokenId, oldImgPath) {
+    CanvasAnimator.cleanupToken(tokenId);
+    CanvasAnimator._tokenTextures.delete(tokenId);
+    CanvasAnimator._texturePending.delete(tokenId);
+    if (oldImgPath) CanvasAnimator._sharedPaths.delete(oldImgPath);
+  }
+
   // Clear all animation state — call when the canvas is rebuilt (meshes are already gone).
   static reset() {
     CanvasAnimator._targets.clear();
@@ -428,7 +431,15 @@ export class CanvasAnimator {
     CanvasAnimator._overlays.forEach(ov => { ov.ring?.destroy(); ov.bubble?.destroy(); });
     CanvasAnimator._overlays.clear();
     CanvasAnimator._localTokenId = null;
+    CanvasAnimator.invalidateLocalTokenCache();
     CanvasAnimator._sleep();
+  }
+
+  // Invalidate the _getLocalToken() actorId→token cache — call when the resolved
+  // token could now be stale (canvas rebuilt, a token was created/deleted).
+  static invalidateLocalTokenCache() {
+    _localTokenCacheCharId  = null;
+    _localTokenCacheTokenId = null;
   }
 
   // Returns the token that was targeted so the caller can include its id in the broadcast.
@@ -465,7 +476,7 @@ export class CanvasAnimator {
   // tokenId is the canvas placeable id sent in the socket packet — no user→character lookup needed.
   static applyRemoteState(tokenId, state) {
     if (!canvas.ready) return;
-    const token = canvas.tokens.placeables.find(t => t.id === tokenId);
+    const token = canvas.tokens.get(tokenId);
     if (!token) return;
 
     if (!state.speaking) {
@@ -502,7 +513,7 @@ export class CanvasAnimator {
     let   waveFrame      = false;   // smooth the shared waveform at most once per frame
 
     for (const [tokenId, target] of CanvasAnimator._targets) {
-      const token = canvas.tokens.placeables.find(t => t.id === tokenId);
+      const token = canvas.tokens.get(tokenId);
       if (!token?.mesh) continue;
 
       // Resolve effective mode early — needed for the default circular mask below.
@@ -588,13 +599,22 @@ export class CanvasAnimator {
 
       // Bounce/stretch — only while speaking; otherwise ease back to the rest pose.
       if (doBounce && speaking) {
-        // EMA the raw waveform peak once per frame — this is the scale jitter source
-        if (!waveFrame) {
-          const raw = Math.abs(AudioEngine.getWaveformSample());
-          CanvasAnimator._waveSmooth += (raw - CanvasAnimator._waveSmooth) * scaleAlpha;
-          waveFrame = true;
+        let s0;
+        if (tokenId === CanvasAnimator._localTokenId) {
+          // The token WE drive: stretch tracks the local mic's raw waveform peak
+          // (signed, so it can squish as well as stretch).
+          if (!waveFrame) {
+            const raw = Math.abs(AudioEngine.getWaveformSample());
+            CanvasAnimator._waveSmooth += (raw - CanvasAnimator._waveSmooth) * scaleAlpha;
+            waveFrame = true;
+          }
+          s0 = Math.max(-1, Math.min(1, CanvasAnimator._waveSmooth * intensity));
+        } else {
+          // Remote token: the local mic has nothing to do with a remote speaker's
+          // voice — stretch from the broadcast volume envelope instead (same
+          // envelope TalkingHeads/VideoAnimator use), expansion-only.
+          s0 = Math.min(1, effectiveVol);
         }
-        const s0 = Math.max(-1, Math.min(1, CanvasAnimator._waveSmooth * intensity));
         const sf = s0 >= 0
           ? 1.0 + s0 * (scaleHigh - 1.0)
           : 1.0 + s0 * (1.0 - scaleLow);
@@ -679,7 +699,11 @@ export class CanvasAnimator {
       const cx = token.w / 2;
       const cy = token.h / 2;
 
-      _ensureOverlays(token, tokenId);
+      // Skip building the ring/bubble PIXI graphics entirely when indicators are
+      // off — most tables run with one style or none, and _ensureOverlays()
+      // otherwise builds a Graphics ring + bubble path + Text for every animated
+      // token regardless of whether either is ever shown.
+      if (indicatorStyle !== "none") _ensureOverlays(token, tokenId);
       const ov = CanvasAnimator._overlays.get(tokenId);
 
       if (ov) {
@@ -878,15 +902,31 @@ function _ensureOverlays(token, tokenId) {
   CanvasAnimator._overlays.set(tokenId, { ring, bubble, dotsText });
 }
 
+// Cache for the actorId → token resolution below — the dominant hot path (any
+// player with a character) otherwise re-scans canvas.tokens.placeables 30x/sec
+// while the mic polls. Invalidated via CanvasAnimator.invalidateLocalTokenCache()
+// on canvasReady, createToken, and deleteToken (see live-actors.mjs).
+let _localTokenCacheCharId  = null;
+let _localTokenCacheTokenId = null;
+
 function _getLocalToken() {
   if (!canvas.ready) return null;
 
   const charId = game.user.character?.id;
-  if (charId) return canvas.tokens.placeables.find(t => t.document.actorId === charId) ?? null;
+  if (charId) {
+    if (_localTokenCacheCharId === charId && _localTokenCacheTokenId) {
+      const cached = canvas.tokens.get(_localTokenCacheTokenId);
+      if (cached?.document.actorId === charId) return cached;
+    }
+    const token = canvas.tokens.placeables.find(t => t.document.actorId === charId) ?? null;
+    _localTokenCacheCharId  = charId;
+    _localTokenCacheTokenId = token?.id ?? null;
+    return token;
+  }
 
   const pinned = SpeakerWidget.pinnedTokenId;
   if (pinned) {
-    const token = canvas.tokens.placeables.find(t => t.id === pinned);
+    const token = canvas.tokens.get(pinned);
     if (token) return token;
   }
 

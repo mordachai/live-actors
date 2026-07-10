@@ -571,3 +571,50 @@ form:not(.lva-avatar-on) .lva-outline-col--avatar :is(input, select, button) {
   font-variant-numeric: tabular-nums;
   font-size: 0.85em;
 }
+
+/* ── Mic Test dialog ────────────────────────────────────────── */
+
+#live-actors-mic-meter .lva-mic-meter .range-value {
+  flex: 0 0 4ch;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.85em;
+}
+
+#live-actors-mic-meter .lva-mic-meter-bar {
+  position: relative;
+  height: 20px;
+  margin: 0.75rem 0 0.5rem;
+  border: 1px solid var(--color-border-light-tertiary, #444);
+  border-radius: 3px;
+  background: var(--color-cool-5, #1f2129);
+  overflow: hidden;
+}
+
+#live-actors-mic-meter .lva-mic-meter-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--color-text-light-6, #777);
+  transition: width 60ms linear;
+}
+
+#live-actors-mic-meter .lva-mic-meter-fill--active {
+  background: #4caf50;
+}
+
+/* Vertical marker at the current noise-gate threshold */
+#live-actors-mic-meter .lva-mic-meter-gate {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0%;
+  width: 2px;
+  background: #fff;
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.8);
+}
+
+#live-actors-mic-meter .lva-mic-meter-status {
+  font-size: 0.85em;
+  opacity: 0.75;
+  margin: 0 0 0.5rem;
+}

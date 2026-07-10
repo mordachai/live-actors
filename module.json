@@ -1,8 +1,8 @@
 {
   "id": "live-actors",
   "title": "Live Actors",
-  "description": "<p>Animates player tokens in real-time based on microphone input. Supports simple bounce mode and advanced viseme lip-sync — without any database writes or network lag.</p>",
-  "version": "1.2.2",
+  "description": "<p>Animates player tokens in real-time based on microphone input. Supports simple bounce mode and advanced viseme lip-sync — no database writes during animation, no network lag.</p>",
+  "version": "1.3.0",
   "socket": true,
   "authors": [
     {
@@ -26,6 +26,6 @@
   ],
   "url": "https://github.com/mordachai/live-actors",
   "manifest": "https://github.com/mordachai/live-actors/releases/latest/download/module.json",
-  "download": "https://github.com/mordachai/live-actors/releases/download/v1.2.2/module.zip",
+  "download": "https://github.com/mordachai/live-actors/releases/download/v1.3.0/module.zip",
   "flags": {}
 }

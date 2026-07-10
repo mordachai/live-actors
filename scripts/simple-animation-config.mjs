@@ -52,14 +52,22 @@ export class SimpleAnimationConfig extends HandlebarsApplicationMixin(Applicatio
   static async _onSave(_event, target) {
     const form = target.closest("form");
     const fd = Object.fromEntries(new FormData(form));
-    const set = (k, v) => game.settings.set("live-actors", k, v);
-
-    await set("indicatorStyle", fd.indicatorStyle ?? "ring");
-    await set("mode",          fd.mode);
-    await set("bouncePreset",  fd.bouncePreset);
 
     const p = TOKEN_BOUNCE_PRESETS[fd.bouncePreset] ?? TOKEN_BOUNCE_PRESETS.bouncy;
-    for (const [k, v] of Object.entries(p)) await set(k, v);
+    const values = {
+      indicatorStyle: fd.indicatorStyle ?? "ring",
+      mode:           fd.mode,
+      bouncePreset:   fd.bouncePreset,
+      ...p,
+    };
+
+    // Only write settings that actually changed, and fire the writes concurrently
+    // (they don't depend on each other) — each is a server round-trip, and every
+    // world-scoped write fires its onChange. A typical save touches 2-3 keys.
+    const writes = Object.entries(values)
+      .filter(([k, v]) => game.settings.get("live-actors", k) !== v)
+      .map(([k, v]) => game.settings.set("live-actors", k, v));
+    await Promise.all(writes);
     this.close();
   }
 }

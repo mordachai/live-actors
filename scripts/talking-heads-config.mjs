@@ -146,7 +146,6 @@ export class TalkingHeadsConfig extends HandlebarsApplicationMixin(ApplicationV2
   static async _onSave(_event, target) {
     const form = target.closest("form");
     const fd = Object.fromEntries(new FormData(form));
-    const set = (k, v) => game.settings.set("live-actors", k, v);
 
     // Collect mirror state per player (unchecked checkboxes absent from FormData)
     const mirrorMap = {};
@@ -155,36 +154,46 @@ export class TalkingHeadsConfig extends HandlebarsApplicationMixin(ApplicationV2
       mirrorMap[userId] = form.querySelector(`input[name="mirror-${userId}"]`)?.checked ?? false;
     }
 
-    await set("talkingHeads",    form.querySelector("input[name='headsAlways']")?.checked ? "always" : "speaking");
-    await set("headIndicatorStyle", fd.headIndicatorStyle ?? "ring");
-    await set("headWidth",       Number(fd.headWidth));
-    await set("headAvatarWidth", Number(fd.headAvatarWidth));
-    await set("headAspectRatio", form.querySelector("input[name='headAspectRatio']")?.checked ?? false);
-    await set("showHeadName",    form.querySelector("input[name='showHeadName']")?.checked ?? false);
-    await set("headNameSize",    Number(fd.headNameSize));
-    await set("headMode",        fd.headMode);
-    await set("headUseAvatar",   form.querySelector("input[name='headUseAvatar']")?.checked ?? false);
-    await set("headMask",        fd.headMask ?? "");
-    await set("headOutline",      form.querySelector("input[name='headOutline']")?.checked ?? false);
-    await set("headOutlineWidth", Number(fd.headOutlineWidth));
-    await set("headOutlineAuto",  form.querySelector("input[name='headOutlineAuto']")?.checked ?? false);
-    await set("headOutlineColor", fd.headOutlineColor ?? "#ffffff");
-    await set("headCutout",       form.querySelector("input[name='headCutout']")?.checked ?? false);
-    await set("headAvatarOutline",      form.querySelector("input[name='headAvatarOutline']")?.checked ?? false);
-    await set("headAvatarOutlineWidth", Number(fd.headAvatarOutlineWidth));
-    await set("headAvatarOutlineAuto",  form.querySelector("input[name='headAvatarOutlineAuto']")?.checked ?? false);
-    await set("headAvatarOutlineColor", fd.headAvatarOutlineColor ?? "#ffffff");
-    await set("headBouncePreset", fd.headBouncePreset);
-
     const p = HEAD_BOUNCE_PRESETS[fd.headBouncePreset] ?? HEAD_BOUNCE_PRESETS.bouncy;
-    await set("headBounceMax",    p.bounceMax);
-    await set("headAngleMax",     p.angleMax);
-    await set("headScaleAxis",    p.scaleAxis);
-    await set("headScaleLow",     p.scaleLow);
-    await set("headScaleHigh",    p.scaleHigh);
-    await set("headIntensity",    p.intensity);
-    await set("headScaleDamping", p.scaleDamping);
-    await set("headMirrorMap",    mirrorMap);
+    const values = {
+      talkingHeads:    form.querySelector("input[name='headsAlways']")?.checked ? "always" : "speaking",
+      headIndicatorStyle: fd.headIndicatorStyle ?? "ring",
+      headWidth:       Number(fd.headWidth),
+      headAvatarWidth: Number(fd.headAvatarWidth),
+      headAspectRatio: form.querySelector("input[name='headAspectRatio']")?.checked ?? false,
+      showHeadName:    form.querySelector("input[name='showHeadName']")?.checked ?? false,
+      headNameSize:    Number(fd.headNameSize),
+      headMode:        fd.headMode,
+      headUseAvatar:   form.querySelector("input[name='headUseAvatar']")?.checked ?? false,
+      headMask:        fd.headMask ?? "",
+      headOutline:      form.querySelector("input[name='headOutline']")?.checked ?? false,
+      headOutlineWidth: Number(fd.headOutlineWidth),
+      headOutlineAuto:  form.querySelector("input[name='headOutlineAuto']")?.checked ?? false,
+      headOutlineColor: fd.headOutlineColor ?? "#ffffff",
+      headCutout:       form.querySelector("input[name='headCutout']")?.checked ?? false,
+      headAvatarOutline:      form.querySelector("input[name='headAvatarOutline']")?.checked ?? false,
+      headAvatarOutlineWidth: Number(fd.headAvatarOutlineWidth),
+      headAvatarOutlineAuto:  form.querySelector("input[name='headAvatarOutlineAuto']")?.checked ?? false,
+      headAvatarOutlineColor: fd.headAvatarOutlineColor ?? "#ffffff",
+      headBouncePreset: fd.headBouncePreset,
+      headBounceMax:    p.bounceMax,
+      headAngleMax:     p.angleMax,
+      headScaleAxis:    p.scaleAxis,
+      headScaleLow:     p.scaleLow,
+      headScaleHigh:    p.scaleHigh,
+      headIntensity:    p.intensity,
+      headScaleDamping: p.scaleDamping,
+      headMirrorMap:    mirrorMap,
+    };
+
+    // Only write settings that actually changed, concurrently — a typical save
+    // touches 2-3 keys, and each world-scoped write fires its onChange (rebuild).
+    // Object-valued settings (headMirrorMap) always compare unequal by reference
+    // and are written every save — cheap, and correctness-safe either way.
+    const writes = Object.entries(values)
+      .filter(([k, v]) => game.settings.get("live-actors", k) !== v)
+      .map(([k, v]) => game.settings.set("live-actors", k, v));
+    await Promise.all(writes);
     this.close();
   }
 }

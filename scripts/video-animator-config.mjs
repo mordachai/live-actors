@@ -76,24 +76,30 @@ export class VideoAnimatorConfig extends HandlebarsApplicationMixin(ApplicationV
   static async _onSave(_event, target) {
     const form = target.closest("form");
     const fd   = Object.fromEntries(new FormData(form));
-    const set  = (k, v) => game.settings.set("live-actors", k, v);
-
-    await set("videoMode",        fd.videoMode);
-    await set("videoBouncePreset", fd.videoBouncePreset);
 
     const p = VIDEO_BOUNCE_PRESETS[fd.videoBouncePreset] ?? VIDEO_BOUNCE_PRESETS.bouncy;
-    await set("videoBounceMax",    p.bounceMax);
-    await set("videoAngleMax",     p.angleMax);
-    await set("videoScaleAxis",    p.scaleAxis);
-    await set("videoScaleLow",     p.scaleLow);
-    await set("videoScaleHigh",    p.scaleHigh);
-    await set("videoIntensity",    p.intensity);
-    await set("videoScaleDamping", p.scaleDamping);
+    const values = {
+      videoMode:         fd.videoMode,
+      videoBouncePreset: fd.videoBouncePreset,
+      videoBounceMax:    p.bounceMax,
+      videoAngleMax:     p.angleMax,
+      videoScaleAxis:    p.scaleAxis,
+      videoScaleLow:     p.scaleLow,
+      videoScaleHigh:    p.scaleHigh,
+      videoIntensity:    p.intensity,
+      videoScaleDamping: p.scaleDamping,
+      // Clean mode is client-scoped — read directly from the form checkboxes.
+      videoCleanName:     form.querySelector("input[name='cleanName']")?.checked     ?? false,
+      videoCleanControls: form.querySelector("input[name='cleanControls']")?.checked ?? false,
+      videoCleanBorder:   form.querySelector("input[name='cleanBorder']")?.checked   ?? false,
+    };
 
-    // Clean mode is client-scoped — read directly from the form checkboxes.
-    await set("videoCleanName",     form.querySelector("input[name='cleanName']")?.checked     ?? false);
-    await set("videoCleanControls", form.querySelector("input[name='cleanControls']")?.checked ?? false);
-    await set("videoCleanBorder",   form.querySelector("input[name='cleanBorder']")?.checked   ?? false);
+    // Only write settings that actually changed, concurrently — a typical save
+    // touches 2-3 keys, and each world-scoped write fires its onChange.
+    const writes = Object.entries(values)
+      .filter(([k, v]) => game.settings.get("live-actors", k) !== v)
+      .map(([k, v]) => game.settings.set("live-actors", k, v));
+    await Promise.all(writes);
 
     // Re-scan all tiles immediately so changes are reflected without reload.
     VideoAnimator._scanAll();

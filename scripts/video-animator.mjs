@@ -55,6 +55,8 @@
 //
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { browseFolder } from "./asset-cache.mjs";
+
 const LERP = 0.2; // lerp factor for bounce/offset (matches TalkingHeads)
 
 export class VideoAnimator {
@@ -62,6 +64,11 @@ export class VideoAnimator {
   // userId → { closed?, ah?, ee?, oo? } URL strings
   static _tileImages   = new Map();
   static _imagesPending = new Set();
+  // userId → the injected .lva-video-frame element, so _getFrame() (called every
+  // rAF frame per user) never runs a document.querySelector. Rebuilt each
+  // _scanAll() pass (Foundry destroys/re-creates tiles on render) and kept in
+  // sync by _injectFrame()/_removeFrame() in between.
+  static _frameCache = new Map();
 
   // Animation state — same shape as TalkingHeads
   static _targets  = new Map(); // userId → state { speaking, volume, viseme? }
@@ -69,6 +76,9 @@ export class VideoAnimator {
   static _rafId    = null;
   static _lastTime = 0;
   static _cfg      = {};        // settings snapshot taken at wake time (no per-frame gets)
+  // Cached videoMode read on every socket message (update()/_setRestImage()) —
+  // refreshed by _scanAll() (bound to videoMode's onChange), not read per-message.
+  static _videoMode = "hybrid";
 
   static _enabled = true;
 
@@ -119,6 +129,10 @@ export class VideoAnimator {
 
   static _scanAll() {
     const videoMode = game.settings.get("live-actors", "videoMode");
+    VideoAnimator._videoMode = videoMode;
+    // Rebuilt below as tiles are (re)synced — Foundry may have destroyed/replaced
+    // tile DOM since the last render, so stale entries must not survive.
+    VideoAnimator._frameCache.clear();
     for (const tileEl of document.querySelectorAll(".camera-view[data-user]")) {
       VideoAnimator._syncTile(tileEl, videoMode);
     }
@@ -177,7 +191,12 @@ export class VideoAnimator {
     if (!container) return;
 
     // Guard: already injected in this DOM generation (e.g. _scanAll called twice).
-    if (container.querySelector(".lva-video-frame")) return;
+    // Still refresh the cache — it was cleared at the top of _scanAll().
+    const existingFrame = container.querySelector(".lva-video-frame");
+    if (existingFrame) {
+      VideoAnimator._frameCache.set(userId, existingFrame);
+      return;
+    }
 
     // Resolve the token image source for this user.
     // Check whether the tile's user is a GM — not whether the current client is.
@@ -208,6 +227,7 @@ export class VideoAnimator {
     img.draggable = false;
     frame.appendChild(img);
     container.appendChild(frame);
+    VideoAnimator._frameCache.set(userId, frame);
 
     // If videoAssets arrived before this frame was injected, apply them now.
     const earlyImages = VideoAnimator._tileImages.get(userId);
@@ -227,13 +247,16 @@ export class VideoAnimator {
   }
 
   static _removeFrame(tileEl) {
+    const userId = tileEl.dataset.user;
+    if (userId) VideoAnimator._frameCache.delete(userId);
     tileEl.classList.remove("lva-video-animated");
     tileEl.querySelector(".lva-video-frame")?.remove();
   }
 
-  // Returns the .lva-video-frame for a userId, or null if not in the DOM.
+  // Returns the .lva-video-frame for a userId, or null if not tracked.
+  // Cached at inject time (see _injectFrame/_scanAll) — no per-frame DOM query.
   static _getFrame(userId) {
-    return document.querySelector(`.camera-view[data-user="${userId}"] .lva-video-frame`) ?? null;
+    return VideoAnimator._frameCache.get(userId) ?? null;
   }
 
   // ── Token resolution ──────────────────────────────────────────────────────
@@ -253,7 +276,7 @@ export class VideoAnimator {
   static _getGMTokenSrc() {
     const tokenId = VideoAnimator._gmPinnedTokenId ?? VideoAnimator._gmAutoTokenId;
     if (!tokenId || !canvas.ready) return null;
-    return canvas.tokens?.placeables?.find(t => t.id === tokenId)?.document.texture.src ?? null;
+    return canvas.tokens?.get(tokenId)?.document.texture.src ?? null;
   }
 
   // ── GM token tracking ─────────────────────────────────────────────────────
@@ -279,6 +302,7 @@ export class VideoAnimator {
   static _refreshGMFrame() {
     const gm = game.users.find(u => u.isGM);
     if (!gm) return;
+    _revokeImages(VideoAnimator._tileImages.get(gm.id));
     VideoAnimator._tileImages.delete(gm.id);
     VideoAnimator._imagesPending.delete(gm.id);
     const tileEl = document.querySelector(`.camera-view[data-user="${gm.id}"]`);
@@ -310,7 +334,7 @@ export class VideoAnimator {
 
     VideoAnimator._targets.set(userId, state);
 
-    const videoMode    = game.settings.get("live-actors", "videoMode");
+    const videoMode    = VideoAnimator._videoMode;
     const wantsVisemes = videoMode === "advanced" || videoMode === "hybrid" || videoMode === "both";
     const hasVisemes   = frame.classList.contains("lva-video-has-visemes");
     const doVisemes    = wantsVisemes && state.viseme !== undefined && hasVisemes;
@@ -460,7 +484,7 @@ export class VideoAnimator {
     const img = frame.querySelector(".lva-head-img");
     if (!img) return;
     if (img.dataset.curViseme === "__rest__") return;
-    const videoMode    = game.settings.get("live-actors", "videoMode");
+    const videoMode    = VideoAnimator._videoMode;
     const wantsVisemes = videoMode === "advanced" || videoMode === "hybrid" || videoMode === "both";
     const hasVisemes   = frame.classList.contains("lva-video-has-visemes");
     const images       = VideoAnimator._tileImages.get(userId);
@@ -493,42 +517,49 @@ export class VideoAnimator {
     const lastDot   = filename.lastIndexOf(".");
     const base      = lastDot >= 0 ? filename.slice(0, lastDot) : filename;
 
-    let images = null;
+    const files = await browseFolder(folder);
+    let images;
 
-    try {
-      const result = await foundry.applications.apps.FilePicker.implementation.browse("data", folder || "/");
-      const files  = result.files ?? [];
-
-      const sheetRe  = new RegExp(`^${_escRegex(base)}[-_]sheet\\.[^.]+$`, "i");
-      const sheetFile = files.find(f => sheetRe.test(f.includes("/") ? f.slice(f.lastIndexOf("/") + 1) : f));
-      if (sheetFile) {
-        images = await _loadFlipbookURLs(sheetFile);
-      } else {
-        images = {};
-        for (const viseme of ["closed", "oo", "ah", "ee"]) {
-          const re    = new RegExp(`^${_escRegex(base)}[ \\-_]${viseme}\\.[^.]+$`, "i");
-          const match = files.find(f => re.test(f.includes("/") ? f.slice(f.lastIndexOf("/") + 1) : f));
-          if (match) images[viseme] = _route(match);
-        }
-      }
-    } catch {
+    const sheetRe  = new RegExp(`^${_escRegex(base)}[-_]sheet\\.[^.]+$`, "i");
+    const sheetFile = files.find(f => sheetRe.test(f.includes("/") ? f.slice(f.lastIndexOf("/") + 1) : f));
+    if (sheetFile) {
+      // Broadcast the sheet PATH, not sliced data URLs — each client slices locally
+      // via _loadFlipbookURLs. The image is served/cacheable; the socket carries
+      // a short string instead of ~0.5-2MB of base64.
+      game.socket.emit("module.live-actors", { type: "videoAssets", userId, sheet: sheetFile });
+      images = await _loadFlipbookURLs(sheetFile);
+    } else {
       images = {};
+      const rawPaths = {};
+      for (const viseme of ["closed", "oo", "ah", "ee"]) {
+        const re    = new RegExp(`^${_escRegex(base)}[ \\-_]${viseme}\\.[^.]+$`, "i");
+        const match = files.find(f => re.test(f.includes("/") ? f.slice(f.lastIndexOf("/") + 1) : f));
+        if (match) { images[viseme] = _route(match); rawPaths[viseme] = match; }
+      }
+      if (Object.keys(rawPaths).length > 0)
+        game.socket.emit("module.live-actors", { type: "videoAssets", userId, paths: rawPaths });
     }
 
     VideoAnimator._tileImages.set(userId, images ?? {});
     VideoAnimator._imagesPending.delete(userId);
-
-    // Broadcast discovered paths to all player clients (socket-first pattern).
-    game.socket.emit("module.live-actors", { type: "videoAssets", userId, images: images ?? {} });
 
     // Apply locally — GM doesn't receive its own socket broadcast.
     VideoAnimator._applySharedImages(userId, images ?? {});
   }
 
   // Called when a "videoAssets" socket message arrives (all non-GM clients).
-  // Stores the discovered image URLs and applies them to the tile frame if it exists.
-  static receiveSharedTileImages(userId, data) {
-    const images = data.images ?? {};
+  // Receives a sheet/file PATH (not data URLs) and slices/routes locally —
+  // mirrors TalkingHeads.receiveSharedHeadImages.
+  static async receiveSharedTileImages(userId, data) {
+    let images;
+    if (data.sheet) {
+      images = await _loadFlipbookURLs(data.sheet);
+    } else if (data.paths) {
+      images = {};
+      for (const [viseme, path] of Object.entries(data.paths)) images[viseme] = _route(path);
+    } else {
+      return;
+    }
     VideoAnimator._tileImages.set(userId, images);
     VideoAnimator._applySharedImages(userId, images);
   }
@@ -559,7 +590,10 @@ function _route(path) {
   return foundry.utils.getRoute(path);
 }
 
-// Crops a 2×2 flipbook sheet into four data-URL images using Canvas 2D.
+// Crops a 2×2 flipbook sheet into four blob-URL images using Canvas 2D. Blob
+// URLs avoid the ~37% base64 memory overhead of data URLs and decode once
+// instead of re-parsing the URL string on every img.src swap. Revoked in
+// _refreshGMFrame() when a GM's token (and its flipbook) changes.
 // Layout: closed=top-left, ah=top-right, ee=bottom-left, oo=bottom-right.
 // MUST match the layout in CanvasAnimator._loadFlipbook and TalkingHeads._loadFlipbookURLs.
 async function _loadFlipbookURLs(sheetPath) {
@@ -577,7 +611,16 @@ async function _loadFlipbookURLs(sheetPath) {
     cv.width  = hw;
     cv.height = hh;
     cv.getContext("2d").drawImage(img, sx, sy, hw, hh, 0, 0, hw, hh);
-    result[key] = cv.toDataURL();
+    const blob = await new Promise(res => cv.toBlob(res));
+    result[key] = URL.createObjectURL(blob);
   }
   return result;
+}
+
+// Revoke every blob: URL in a {closed?, oo?, ah?, ee?} images object.
+function _revokeImages(images) {
+  if (!images) return;
+  for (const v of Object.values(images)) {
+    if (typeof v === "string" && v.startsWith("blob:")) URL.revokeObjectURL(v);
+  }
 }

@@ -68,7 +68,7 @@ Three render loops run independently off this shared `state`:
 - **Snapshot/restore:** turning on snapshots each client's prior mute choice **once** (client-scoped `echoGuardSnapshot`, read from the raw persisted value so it's connection-independent and survives refresh); turning off restores it — respects what the player had, never blind-unmutes. No snapshot captured → leave as-is (don't surprise-broadcast).
 - **Re-assert:** `EchoGuard.reassert()` on `renderCameraViews`/`renderCameraPopout` re-mutes if a player un-mutes in the dock while on (that's the point).
 - **Runs even with `disableAnimations`** — wired in `ready` *before* that bail, because it's about mic broadcast, not animation.
-- **GM popup:** `DialogV2` on `ready`, GM-only, shown only when audio-capable A/V is active AND Echo Guard is off, with an inline "Enable Echo Guard" button. Re-appears each refresh while off (no "don't ask" flag — intentional); enabling stops it.
+- **GM popup:** `DialogV2` on `ready`, GM-only, shown only when audio-capable A/V is active AND Echo Guard is off, with an inline "Enable Echo Guard" button. "Not now" (or closing it) sets a `sessionStorage` flag (`EchoGuard._DISMISS_KEY`) that suppresses the popup for the rest of that browser session — not a persisted setting, so it reappears next login; enabling Echo Guard stops it for good.
 - **AudioEngine capture (required pair):** `_acquireStream` prefers its **own `getUserMedia`** over Foundry's `localStream`, so muting the Foundry mic doesn't kill lip-sync and animation works in VIDEO-only A/V (where Foundry has no audio track). Foundry stream is a fallback only if own capture is denied.
 
 ## Animation modes

@@ -1,5 +1,10 @@
 export class AudioEngine {
   static _context = null;
+  static _stream = null;    // captured MediaStream — see _ownStream below
+  // True only when _stream is OUR OWN getUserMedia capture (not Foundry's A/V
+  // stream, reused as a fallback). Only an own stream is safe to stop() on
+  // destroy() — stopping Foundry's stream would kill its audio broadcast too.
+  static _ownStream = false;
   static _analyser = null;
   static _buffer = null;
   static _tdBuffer = null;   // time-domain waveform buffer, read per-frame by the animator
@@ -9,6 +14,15 @@ export class AudioEngine {
   static _visemeHold = 0;
   static _VISEME_HOLD_FRAMES = 3;
   static _CLOSED_BRIDGE_FRAMES = 2;
+  // FFT bin ranges for _classifyViseme, computed from the REAL sample rate at
+  // init (see _computeVisemeBins) — most Windows mics run at 48000 Hz, not the
+  // 44100 Hz these ranges used to assume, which biased every band ~9% high.
+  static _visemeBins = null;
+
+  // Settings snapshot read by _poll() — mode/headMode/videoMode/sensitivity are
+  // otherwise fetched 30x/sec forever. Refreshed at init() and kept live via
+  // each setting's onChange (see live-actors.mjs, which writes into this object).
+  static _cfg = { mode: "none", headMode: "hybrid", videoMode: "hybrid", sensitivity: 20 };
 
   // Speaking detection with hysteresis — prevents ambient mic noise from
   // flickering animation on/off. Enter high, exit low, hold a few frames.
@@ -20,11 +34,25 @@ export class AudioEngine {
 
   static async init(onState) {
     AudioEngine._onState = onState;
+    AudioEngine._cfg = {
+      mode:        game.settings.get("live-actors", "mode"),
+      headMode:    game.settings.get("live-actors", "headMode"),
+      videoMode:   game.settings.get("live-actors", "videoMode"),
+      sensitivity: game.settings.get("live-actors", "sensitivity"),
+    };
 
     const stream = await AudioEngine._acquireStream();
     if (!stream) return;
 
     const ctx = new AudioContext();
+    if (ctx.state === "suspended") {
+      // Chromium suspends a context created without a user gesture — the
+      // analyser then returns silence with no error. Resume on the first
+      // interaction; Foundry's own boot flow may also unlock it first.
+      const resume = () => ctx.resume();
+      document.addEventListener("pointerdown", resume, { once: true });
+      document.addEventListener("keydown",     resume, { once: true });
+    }
     const analyser = ctx.createAnalyser();
     analyser.fftSize = 256;
     analyser.smoothingTimeConstant = 0.4;
@@ -32,7 +60,9 @@ export class AudioEngine {
     ctx.createMediaStreamSource(stream).connect(analyser);
 
     AudioEngine._context = ctx;
+    AudioEngine._stream = stream;
     AudioEngine._analyser = analyser;
+    AudioEngine._visemeBins = AudioEngine._computeVisemeBins(ctx.sampleRate, analyser.fftSize);
     AudioEngine._buffer   = new Uint8Array(analyser.frequencyBinCount);
     AudioEngine._tdBuffer = new Uint8Array(analyser.fftSize);
 
@@ -59,7 +89,8 @@ export class AudioEngine {
     if (navigator.mediaDevices?.getUserMedia) {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-        ui.notifications.info("Live Actors: Microphone access granted.");
+        console.log("Live Actors | Microphone access granted.");
+        AudioEngine._ownStream = true;
         return stream;
       } catch (err) {
         console.error("Live Actors |", err);
@@ -88,10 +119,11 @@ export class AudioEngine {
     const buffer = AudioEngine._buffer;
     AudioEngine._analyser.getByteFrequencyData(buffer);
 
-    const mode      = game.settings.get("live-actors", "mode");
-    const headMode  = game.settings.get("live-actors", "headMode");
-    const videoMode = game.settings.get("live-actors", "videoMode");
-    const sensitivity = game.settings.get("live-actors", "sensitivity") / 100;
+    // Cached, not read here — mode/headMode/videoMode/sensitivity are fetched
+    // 30x/sec forever otherwise. Kept fresh via each setting's onChange (see
+    // live-actors.mjs) and refreshed once at init().
+    const { mode, headMode, videoMode, sensitivity: sensitivityPct } = AudioEngine._cfg;
+    const sensitivity = sensitivityPct / 100;
 
     // RMS volume, normalized 0-1
     let sumSq = 0;
@@ -143,6 +175,12 @@ export class AudioEngine {
     AudioEngine._onState(state);
   }
 
+  // True while a mic stream is actively being analysed — used for the scene
+  // control tooltip's status readout ("Mic: active/inactive").
+  static isActive() {
+    return !!AudioEngine._analyser;
+  }
+
   // Called every PIXI frame by the animator. Returns the signed peak waveform sample
   // in the current buffer window (-1 = trough, +1 = peak, 0 = silence / no mic).
   static getWaveformSample() {
@@ -156,19 +194,36 @@ export class AudioEngine {
     return peak;
   }
 
-  static _classifyViseme(buffer) {
-    // 44100 Hz, 256 FFT → ~172 Hz/bin; bin 0 is DC, skipped
-    // Bins 1-3   → ~172–516 Hz   → "oo" (uu/oo: tight rounded low energy)
-    // Bins 4-12  → ~688–2064 Hz  → "ah" (ah/eh/open vowels: broad mid energy)
-    // Bins 13-20 → ~2236–3440 Hz → "ee" (ee/i: strong high F2 peak)
-    let low = 0, mid = 0, high = 0;
-    for (let i = 1; i < 4;  i++) low  += buffer[i];
-    for (let i = 4; i < 13; i++) mid  += buffer[i];
-    for (let i = 13; i < 21; i++) high += buffer[i];
+  // Bin ranges for the three viseme energy bands, computed from the ANALYSER's
+  // real sample rate/fftSize instead of an assumed 44100 Hz (most Windows mics
+  // run at 48000 Hz — ~9% off every boundary, e.g. the ee band drifting up past
+  // 3.7 kHz). Target frequencies (Hz), same bands the old hardcoded bins covered:
+  //   oo: ≲ 689     — uu/oo: tight rounded low energy
+  //   ah: 689–2239  — ah/eh/open vowels: broad mid energy
+  //   ee: 2239–3617 — ee/i: strong high F2 peak
+  static _computeVisemeBins(sampleRate, fftSize) {
+    const binHz = sampleRate / fftSize;
+    const toBin = hz => Math.max(1, Math.round(hz / binHz));
+    const lowEnd  = toBin(689);
+    const midEnd  = toBin(2239);
+    const highEnd = toBin(3617);
+    return {
+      lowStart: 1,      lowEnd,
+      midStart: lowEnd,  midEnd,
+      highStart: midEnd, highEnd,
+    };
+  }
 
-    low  /= 3;
-    mid  /= 9;
-    high /= 8;
+  static _classifyViseme(buffer) {
+    const bins = AudioEngine._visemeBins ?? AudioEngine._computeVisemeBins(44100, 256);
+    let low = 0, mid = 0, high = 0;
+    for (let i = bins.lowStart;  i < bins.lowEnd;  i++) low  += buffer[i];
+    for (let i = bins.midStart;  i < bins.midEnd;  i++) mid  += buffer[i];
+    for (let i = bins.highStart; i < bins.highEnd; i++) high += buffer[i];
+
+    low  /= Math.max(1, bins.lowEnd  - bins.lowStart);
+    mid  /= Math.max(1, bins.midEnd  - bins.midStart);
+    high /= Math.max(1, bins.highEnd - bins.highStart);
 
     // EE/IH: F2 peak in high range — F1 lives in "low" so we only compare to mid
     if (high * 1.4 >= mid) return "ee";
@@ -182,6 +237,14 @@ export class AudioEngine {
       clearInterval(AudioEngine._intervalId);
       AudioEngine._intervalId = null;
     }
+    // Only stop tracks we captured ourselves — never Foundry's A/V stream (the
+    // fallback path), which would kill its broadcast too. Clear onended first
+    // so stopping doesn't re-enter destroy() via the "mic disconnected" handler.
+    if (AudioEngine._ownStream) {
+      AudioEngine._stream?.getTracks().forEach(t => { t.onended = null; t.stop(); });
+    }
+    AudioEngine._stream = null;
+    AudioEngine._ownStream = false;
     AudioEngine._context?.close();
     AudioEngine._context = null;
     AudioEngine._analyser = null;

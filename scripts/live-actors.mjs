@@ -8,6 +8,7 @@ import { VideoAnimator } from "./video-animator.mjs";
 import { SimpleAnimationConfig } from "./simple-animation-config.mjs";
 import { TalkingHeadsConfig } from "./talking-heads-config.mjs";
 import { VideoAnimatorConfig } from "./video-animator-config.mjs";
+import { MicMeterDialog } from "./mic-meter.mjs";
 
 let _combatActive = false;
 
@@ -33,6 +34,27 @@ function _applyCombatState() {
   _combatActive = !!game.combat?.started
     && game.combat.scene?.id === canvas.scene?.id;
   _applyState();
+}
+
+function _audioStateCallback(state) {
+  if (!_isEffectivelyEnabled()) return;
+  // Always broadcast so remote clients can animate all three surfaces even
+  // when there is no canvas token for this user (tokenId is null then;
+  // receivers skip canvas animation but still update heads and video tiles).
+  const token = CanvasAnimator.applyLocalState(state);
+  SocketHandler.broadcast(state, token?.id ?? null);
+  TalkingHeads.update(game.user.id, state);
+  VideoAnimator.applyLocalState(state);
+}
+
+// Lazily starts mic capture — called on ready and whenever "enabled" flips back
+// on. A no-op while already running, disabled, or for a user with no character/GM.
+function _startAudioEngine() {
+  if (game.settings.get("live-actors", "disableAnimations")) return;
+  if (!game.settings.get("live-actors", "enabled")) return;
+  if (!(game.user.character || game.user.isGM)) return;
+  if (AudioEngine._context) return;
+  AudioEngine.init(_audioStateCallback);
 }
 
 function registerSettings() {
@@ -63,14 +85,23 @@ function registerSettings() {
     default: { captured: false, muted: false },
   });
 
+  // Hidden — set from the Config Mic dialog (micMeter menu below), not a raw
+  // slider in the main panel. The dialog's live meter IS the calibration UI.
   game.settings.register("live-actors", "sensitivity", {
-    name: "Mic Sensitivity",
-    hint: "Raise if your mic is quiet. Lower to reduce background noise.",
     scope: "client",
-    config: true,
+    config: false,
     type: Number,
     default: 20,
-    range: { min: 0, max: 100, step: 1 },
+    onChange: v => AudioEngine._cfg.sensitivity = v,
+  });
+
+  game.settings.registerMenu("live-actors", "micMeter", {
+    name: "Config Mic",
+    label: "Open Config Mic",
+    hint: "Live microphone level meter with the current noise-gate threshold — set Mic Sensitivity here by watching the bar instead of guessing.",
+    icon: "fas fa-microphone-lines",
+    type: MicMeterDialog,
+    restricted: false,
   });
 
   // ── GM-only menus ─────────────────────────────────────────────
@@ -107,7 +138,7 @@ function registerSettings() {
     config: false,
     type: String,
     default: "always",
-    onChange: () => TalkingHeads.rebuild(),
+    onChange: () => TalkingHeads.requestRebuild(),
   });
 
   game.settings.registerMenu("live-actors", "talkingHeadsConfig", {
@@ -137,7 +168,7 @@ function registerSettings() {
   // ── Hidden — managed by Token Animation Config submenu (GM only) ─
 
   game.settings.register("live-actors", "indicatorStyle", { scope: "world", config: false, type: String, default: "bubble" });
-  game.settings.register("live-actors", "mode",         { scope: "world",  config: false, type: String, default: "none", onChange: () => CanvasAnimator.onModeChange() });
+  game.settings.register("live-actors", "mode",         { scope: "world",  config: false, type: String, default: "none", onChange: v => { AudioEngine._cfg.mode = v; CanvasAnimator.onModeChange(); } });
   game.settings.register("live-actors", "intensity",    { scope: "world",  config: false, type: Number, default: 2.0  });
   game.settings.register("live-actors", "bounceMax",    { scope: "world",  config: false, type: Number, default: 8    });
   game.settings.register("live-actors", "angleMax",     { scope: "world",  config: false, type: Number, default: 2    });
@@ -148,29 +179,29 @@ function registerSettings() {
 
   // ── Hidden — managed by Talking Heads Config submenu (world = GM-controlled for all) ──
 
-  game.settings.register("live-actors", "headIndicatorStyle", { scope: "world", config: false, type: String, default: "none" });
-  game.settings.register("live-actors", "headWidth",        { scope: "world",  config: false, type: Number, default: 260,      onChange: () => TalkingHeads.rebuild() });
-  game.settings.register("live-actors", "headAspectRatio",  { scope: "world",  config: false, type: Boolean, default: false,  onChange: () => TalkingHeads.rebuild() });
-  game.settings.register("live-actors", "showHeadName",     { scope: "world",  config: false, type: Boolean, default: true,   onChange: () => TalkingHeads.rebuild() });
-  game.settings.register("live-actors", "headNameSize",     { scope: "world",  config: false, type: Number, default: 0.8,    onChange: () => TalkingHeads.rebuild() });
-  game.settings.register("live-actors", "headMode",        { scope: "world",  config: false, type: String, default: "hybrid", onChange: () => TalkingHeads.rebuild() });
-  game.settings.register("live-actors", "headMask",        { scope: "world",  config: false, type: String, default: "modules/live-actors/assets/masks/grunge-1.webp", onChange: () => TalkingHeads.rebuild() });
+  game.settings.register("live-actors", "headIndicatorStyle", { scope: "world", config: false, type: String, default: "none", onChange: v => TalkingHeads._headIndicatorStyle = v });
+  game.settings.register("live-actors", "headWidth",        { scope: "world",  config: false, type: Number, default: 260,      onChange: () => TalkingHeads.requestRebuild() });
+  game.settings.register("live-actors", "headAspectRatio",  { scope: "world",  config: false, type: Boolean, default: false,  onChange: () => TalkingHeads.requestRebuild() });
+  game.settings.register("live-actors", "showHeadName",     { scope: "world",  config: false, type: Boolean, default: true,   onChange: () => TalkingHeads.requestRebuild() });
+  game.settings.register("live-actors", "headNameSize",     { scope: "world",  config: false, type: Number, default: 0.8,    onChange: () => TalkingHeads.requestRebuild() });
+  game.settings.register("live-actors", "headMode",        { scope: "world",  config: false, type: String, default: "hybrid", onChange: v => { AudioEngine._cfg.headMode = v; TalkingHeads.requestRebuild(); } });
+  game.settings.register("live-actors", "headMask",        { scope: "world",  config: false, type: String, default: "modules/live-actors/assets/masks/grunge-1.webp", onChange: () => TalkingHeads.requestRebuild() });
   // Avatar mode: show a separate "{tokenBase}-avatar.ext" image (full-body/portrait),
   // static aspect ratio, no visemes. Decoupled from headMode (forced simple bounce).
-  game.settings.register("live-actors", "headUseAvatar",   { scope: "world",  config: false, type: Boolean, default: true,  onChange: () => TalkingHeads.rebuild() });
-  game.settings.register("live-actors", "headAvatarWidth",  { scope: "world",  config: false, type: Number, default: 200,    onChange: () => TalkingHeads.rebuild() });
+  game.settings.register("live-actors", "headUseAvatar",   { scope: "world",  config: false, type: Boolean, default: true,  onChange: () => TalkingHeads.requestRebuild() });
+  game.settings.register("live-actors", "headAvatarWidth",  { scope: "world",  config: false, type: Number, default: 200,    onChange: () => TalkingHeads.requestRebuild() });
   // Cartoon silhouette outline (Talking Heads only). Follows the alpha from the mask,
   // or — with Cutout on — the portrait PNG's own transparency.
-  game.settings.register("live-actors", "headOutline",      { scope: "world",  config: false, type: Boolean, default: false,  onChange: () => TalkingHeads.rebuild() });
-  game.settings.register("live-actors", "headOutlineWidth", { scope: "world",  config: false, type: Number,  default: 3,      onChange: () => TalkingHeads.rebuild() });
-  game.settings.register("live-actors", "headOutlineAuto",  { scope: "world",  config: false, type: Boolean, default: true,   onChange: () => TalkingHeads.rebuild() }); // true = each player's colour
-  game.settings.register("live-actors", "headOutlineColor", { scope: "world",  config: false, type: String,  default: "#ffffff", onChange: () => TalkingHeads.rebuild() });
-  game.settings.register("live-actors", "headCutout",       { scope: "world",  config: false, type: Boolean, default: false,  onChange: () => TalkingHeads.rebuild() });
+  game.settings.register("live-actors", "headOutline",      { scope: "world",  config: false, type: Boolean, default: false,  onChange: () => TalkingHeads.requestRebuild() });
+  game.settings.register("live-actors", "headOutlineWidth", { scope: "world",  config: false, type: Number,  default: 3,      onChange: () => TalkingHeads.requestRebuild() });
+  game.settings.register("live-actors", "headOutlineAuto",  { scope: "world",  config: false, type: Boolean, default: true,   onChange: () => TalkingHeads.requestRebuild() }); // true = each player's colour
+  game.settings.register("live-actors", "headOutlineColor", { scope: "world",  config: false, type: String,  default: "#ffffff", onChange: () => TalkingHeads.requestRebuild() });
+  game.settings.register("live-actors", "headCutout",       { scope: "world",  config: false, type: Boolean, default: false,  onChange: () => TalkingHeads.requestRebuild() });
   // Avatar mode has its own outline config (silhouette = avatar PNG alpha, so no Cutout toggle).
-  game.settings.register("live-actors", "headAvatarOutline",      { scope: "world", config: false, type: Boolean, default: true,    onChange: () => TalkingHeads.rebuild() });
-  game.settings.register("live-actors", "headAvatarOutlineWidth", { scope: "world", config: false, type: Number,  default: 4,        onChange: () => TalkingHeads.rebuild() });
-  game.settings.register("live-actors", "headAvatarOutlineAuto",  { scope: "world", config: false, type: Boolean, default: false,     onChange: () => TalkingHeads.rebuild() });
-  game.settings.register("live-actors", "headAvatarOutlineColor", { scope: "world", config: false, type: String,  default: "#ffffff", onChange: () => TalkingHeads.rebuild() });
+  game.settings.register("live-actors", "headAvatarOutline",      { scope: "world", config: false, type: Boolean, default: true,    onChange: () => TalkingHeads.requestRebuild() });
+  game.settings.register("live-actors", "headAvatarOutlineWidth", { scope: "world", config: false, type: Number,  default: 4,        onChange: () => TalkingHeads.requestRebuild() });
+  game.settings.register("live-actors", "headAvatarOutlineAuto",  { scope: "world", config: false, type: Boolean, default: false,     onChange: () => TalkingHeads.requestRebuild() });
+  game.settings.register("live-actors", "headAvatarOutlineColor", { scope: "world", config: false, type: String,  default: "#ffffff", onChange: () => TalkingHeads.requestRebuild() });
   game.settings.register("live-actors", "headBounceMax",    { scope: "world",  config: false, type: Number, default: 5    });
   game.settings.register("live-actors", "headAngleMax",     { scope: "world",  config: false, type: Number, default: 12   });
   game.settings.register("live-actors", "headScaleAxis",    { scope: "world",  config: false, type: String, default: "y"  });
@@ -183,7 +214,7 @@ function registerSettings() {
   // ── Hidden — managed by Video Window Config submenu (world = all clients animate identically) ──
   // All video* settings hint: requires Foundry A/V enabled (not Disabled mode).
 
-  game.settings.register("live-actors", "videoMode",        { scope: "world",  config: false, type: String,  default: "hybrid", onChange: () => VideoAnimator._scanAll() });
+  game.settings.register("live-actors", "videoMode",        { scope: "world",  config: false, type: String,  default: "hybrid", onChange: v => { AudioEngine._cfg.videoMode = v; VideoAnimator._scanAll(); } });
   game.settings.register("live-actors", "videoBounceMax",   { scope: "world",  config: false, type: Number,  default: 1    });
   game.settings.register("live-actors", "videoAngleMax",    { scope: "world",  config: false, type: Number,  default: 0    });
   game.settings.register("live-actors", "videoScaleAxis",   { scope: "world",  config: false, type: String,  default: "xy" });
@@ -204,7 +235,16 @@ function registerSettings() {
     config: false,
     type: Boolean,
     default: true,
-    onChange: () => { ui.controls.render(); _applyState(); },
+    onChange: (value) => {
+      ui.controls.render();
+      _applyState();
+      // Toggling the module off should release the mic (browser's "mic in use"
+      // indicator, privacy) — enabled:false only suppressed the callback before,
+      // capture kept running for the whole session. Combat-pause deliberately
+      // does NOT tear this down (see _isEffectivelyEnabled) — only the explicit toggle.
+      if (value) _startAudioEngine();
+      else AudioEngine.destroy();
+    },
   });
 
   // ── Last in panel ─────────────────────────────────────────────
@@ -226,6 +266,7 @@ function registerSettings() {
     config: true,
     type: Boolean,
     default: false,
+    requiresReload: true,
   });
 
 }
@@ -234,6 +275,23 @@ Hooks.on("init", () => {
   registerSettings();
 });
 
+// One-line diagnostic for the scene-control tooltip — when nothing animates a
+// GM otherwise can't tell whether the cause is mic permission, module state,
+// combat pause, or mode "none" without digging through settings.
+function _statusTooltip() {
+  const enabled = game.settings.get("live-actors", "enabled");
+  const mode    = game.settings.get("live-actors", "mode");
+  const mic     = game.settings.get("live-actors", "disableAnimations")
+    ? "off (client)"
+    : (AudioEngine.isActive() ? "active" : "inactive");
+  const paused  = !enabled
+    ? "module off"
+    : (game.settings.get("live-actors", "disableDuringCombat") && _combatActive)
+      ? "combat"
+      : "no";
+  return `Live Actors — Mic: ${mic} · Mode: ${mode} · Paused: ${paused}`;
+}
+
 Hooks.on("getSceneControlButtons", controls => {
   // v14: controls is a plain object keyed by layer name, tools is also an object
   if (!game.user.isGM) return;
@@ -241,7 +299,7 @@ Hooks.on("getSceneControlButtons", controls => {
 
   controls.tokens.tools["live-actors-toggle"] = {
     name:   "live-actors-toggle",
-    title:  "Live Actors",
+    title:  _statusTooltip(),
     icon:   "fas fa-head-side-speak",
     toggle: true,
     active: game.settings.get("live-actors", "enabled"),
@@ -312,16 +370,37 @@ Hooks.on("controlToken", (token, controlled) => {
   CanvasAnimator.prepareToken(token);
 });
 
+// If a GM changes a token's image mid-session, the viseme/mask/swap-fit caches
+// (keyed by tokenId, discovered from the OLD texture.src) go stale and the
+// module keeps swapping the old frames onto the new art. Capture the prior path
+// in preUpdateToken (updateToken's document already reflects the new value).
+const _tokenSrcBeforeUpdate = new Map(); // tokenId → texture.src just before an update that changes it
+
+Hooks.on("preUpdateToken", (doc, changes) => {
+  if (foundry.utils.hasProperty(changes, "texture.src")) {
+    _tokenSrcBeforeUpdate.set(doc.id, doc.texture.src);
+  }
+});
+
+Hooks.on("updateToken", (doc, changes) => {
+  if (!foundry.utils.hasProperty(changes, "texture.src")) return;
+  const oldSrc = _tokenSrcBeforeUpdate.get(doc.id);
+  _tokenSrcBeforeUpdate.delete(doc.id);
+  CanvasAnimator.invalidateTokenArt(doc.id, oldSrc);
+});
+
 Hooks.on("createCombat",  _applyCombatState);
 Hooks.on("deleteCombat",  _applyCombatState);
 Hooks.on("updateCombat",  _applyCombatState);
 
 Hooks.on("createToken", () => {
+  CanvasAnimator.invalidateLocalTokenCache();
   SpeakerWidget._instance?.render({ force: true });
 });
 
 Hooks.on("deleteToken", (doc) => {
   CanvasAnimator.cleanupToken(doc.id);
+  CanvasAnimator.invalidateLocalTokenCache();
   if (SpeakerWidget.pinnedTokenId === doc.id) SpeakerWidget.clearPin();
   SpeakerWidget._instance?.render({ force: true });
 });
@@ -349,18 +428,7 @@ Hooks.on("ready", () => {
   TalkingHeads.init();
   VideoAnimator.init();
 
-  if (game.user.character || game.user.isGM) {
-    AudioEngine.init((state) => {
-      if (!_isEffectivelyEnabled()) return;
-      const token = CanvasAnimator.applyLocalState(state);
-      // Always broadcast so remote clients can animate all three surfaces even
-      // when there is no canvas token for this user (tokenId is null then;
-      // receivers skip canvas animation but still update heads and video tiles).
-      SocketHandler.broadcast(state, token?.id ?? null);
-      TalkingHeads.update(game.user.id, state);
-      VideoAnimator.applyLocalState(state);
-    });
-  }
+  _startAudioEngine();
 
   _applyCombatState();
 });

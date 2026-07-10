@@ -1,0 +1,23 @@
+<form class="lva-mic-meter standard-form" autocomplete="off">
+
+  <div class="form-group slim">
+    <label>Sensitivity <i class="fa-solid fa-circle-question lva-help" data-tooltip-direction="UP" data-tooltip-class="lva-help-tip" data-tooltip-html="Raise if your mic is quiet. Lower to reduce background noise.<br>Talk normally — the bar should turn green past the white line."></i></label>
+    <div class="form-fields">
+      <input type="range" name="sensitivity" min="0" max="100" step="1" value="{{sensitivity}}">
+      <span class="range-value">{{sensitivity}}</span>
+    </div>
+  </div>
+
+  <div class="lva-mic-meter-bar">
+    <div class="lva-mic-meter-fill"></div>
+    <div class="lva-mic-meter-gate"></div>
+  </div>
+  <p class="lva-mic-meter-status">Requesting microphone access…</p>
+
+  <footer class="sheet-footer flexrow">
+    <button type="button" data-action="save">
+      <i class="fas fa-save"></i> Save Sensitivity
+    </button>
+  </footer>
+
+</form>

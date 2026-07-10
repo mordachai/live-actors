@@ -7,6 +7,11 @@ const THROTTLE_MS = 1000 / 15;
 
 export class SocketHandler {
   static _lastBroadcast = 0;
+  // Trailing-frame counter: while going silent, keep sending a few frames so
+  // remote clients ease back and settle, then suppress entirely at idle — a
+  // silent client has nothing new to say 15x/sec forever.
+  static _silentFramesLeft = 0;
+  static _TRAILING_FRAMES = 10;
 
   static init() {
     game.socket.on(SOCKET_EVENT, (data) => {
@@ -36,7 +41,7 @@ export class SocketHandler {
         TalkingHeads.update(data.userId, data.state);
         VideoAnimator.update(data.userId, data.state);
       } else if (data.type === "headPosition") {
-        TalkingHeads.setPosition(data.targetUserId, data.x, data.y);
+        TalkingHeads.setPosition(data.targetUserId, data.xPct, data.yPct);
       } else if (data.type === "gmHead") {
         // GM broadcast: update GM's talking head and video tile on all player clients
         TalkingHeads.setGMAutoToken(data.tokenId);
@@ -46,6 +51,14 @@ export class SocketHandler {
   }
 
   static broadcast(state, tokenId) {
+    if (state.speaking) {
+      SocketHandler._silentFramesLeft = SocketHandler._TRAILING_FRAMES;
+    } else if (SocketHandler._silentFramesLeft > 0) {
+      SocketHandler._silentFramesLeft--;
+    } else {
+      return; // fully idle — remote surfaces already settled, nothing to send
+    }
+
     const now = Date.now();
     if (now - SocketHandler._lastBroadcast < THROTTLE_MS) return;
     SocketHandler._lastBroadcast = now;
