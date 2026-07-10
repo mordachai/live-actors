@@ -14,20 +14,6 @@
     </div>
   </fieldset>
 
-  <fieldset>
-    <legend>Speaking Indicator</legend>
-    <div class="form-group slim">
-      <label>Style <i class="fa-solid fa-circle-question lva-help" data-tooltip-direction="UP" data-tooltip-class="lva-help-tip" data-tooltip-html="<strong>Ring</strong> — circle around the token<br><strong>Bubble</strong> — speech bubble above it<br>Separate from the Talking Head indicator."></i></label>
-      <div class="form-fields">
-        <select name="indicatorStyle">
-          {{#each indicatorOptions}}
-          <option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>
-          {{/each}}
-        </select>
-      </div>
-    </div>
-  </fieldset>
-
   <fieldset class="lva-bounce-config">
     <legend>Bounce Config</legend>
     <div class="form-group slim">
@@ -35,6 +21,20 @@
       <div class="form-fields">
         <select name="bouncePreset">
           {{#each presetOptions}}
+          <option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+          {{/each}}
+        </select>
+      </div>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Speaking Indicator</legend>
+    <div class="form-group slim">
+      <label>Style <i class="fa-solid fa-circle-question lva-help" data-tooltip-direction="UP" data-tooltip-class="lva-help-tip" data-tooltip-html="<strong>Ring</strong> — circle around the token<br><strong>Bubble</strong> — speech bubble above it<br>Separate from the Talking Head indicator."></i></label>
+      <div class="form-fields">
+        <select name="indicatorStyle">
+          {{#each indicatorOptions}}
           <option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>
           {{/each}}
         </select>

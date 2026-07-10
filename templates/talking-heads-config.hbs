@@ -14,6 +14,20 @@
     </div>
   </fieldset>
 
+  <fieldset class="lva-bounce-config">
+    <legend>Bounce Config</legend>
+    <div class="form-group slim">
+      <label>Preset <i class="fa-solid fa-circle-question lva-help" data-tooltip-direction="UP" data-tooltip-class="lva-help-tip" data-tooltip-html="Pick a bounce feel:<ul><li><strong>Pulse</strong> — gentle grow/shrink, no jump</li><li><strong>Bouncy</strong> — light, happy bounce</li><li><strong>Wobbly</strong> — tilts side to side</li><li><strong>Stretchy</strong> — squashes and stretches tall</li><li><strong>Toon</strong> — cartoony bounce, tilt and stretch</li><li><strong>Toon Wobble</strong> — Toon, snappier and wobblier</li></ul>"></i></label>
+      <div class="form-fields">
+        <select name="headBouncePreset">
+          {{#each presetOptions}}
+          <option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+          {{/each}}
+        </select>
+      </div>
+    </div>
+  </fieldset>
+
   <fieldset>
     <legend>Speaking Indicator</legend>
     <div class="form-group slim">
@@ -158,20 +172,6 @@
     </div>
   </fieldset>
   </div>
-
-  <fieldset class="lva-bounce-config">
-    <legend>Bounce Config</legend>
-    <div class="form-group slim">
-      <label>Preset <i class="fa-solid fa-circle-question lva-help" data-tooltip-direction="UP" data-tooltip-class="lva-help-tip" data-tooltip-html="Pick a bounce feel:<ul><li><strong>Pulse</strong> — gentle grow/shrink, no jump</li><li><strong>Bouncy</strong> — light, happy bounce</li><li><strong>Wobbly</strong> — tilts side to side</li><li><strong>Stretchy</strong> — squashes and stretches tall</li><li><strong>Toon</strong> — cartoony bounce, tilt and stretch</li><li><strong>Toon Wobble</strong> — Toon, snappier and wobblier</li></ul>"></i></label>
-      <div class="form-fields">
-        <select name="headBouncePreset">
-          {{#each presetOptions}}
-          <option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>
-          {{/each}}
-        </select>
-      </div>
-    </div>
-  </fieldset>
 
   {{#if players}}
   <fieldset>
