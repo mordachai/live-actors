@@ -478,7 +478,7 @@ form:not(.lva-avatar-on) .lva-outline-col--avatar :is(input, select, button) {
 .lva-video-frame .lva-head-img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   display: block;
 }
 
