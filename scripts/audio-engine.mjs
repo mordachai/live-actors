@@ -36,6 +36,17 @@ export class AudioEngine {
     AudioEngine._buffer   = new Uint8Array(analyser.frequencyBinCount);
     AudioEngine._tdBuffer = new Uint8Array(analyser.fftSize);
 
+    // If the mic device disappears (unplugged, disabled), the analyser can keep
+    // returning its last non-silent buffer instead of going quiet, latching
+    // "speaking" forever. Force idle and stop polling when the track ends.
+    for (const track of stream.getTracks()) {
+      track.onended = () => {
+        if (AudioEngine._onState) AudioEngine._onState({ mode: game.settings.get("live-actors", "mode"), volume: 0, speaking: false });
+        AudioEngine.destroy();
+        ui.notifications.warn("Live Actors: Microphone disconnected — animation stopped.");
+      };
+    }
+
     AudioEngine._intervalId = setInterval(() => AudioEngine._poll(), 1000 / 30);
   }
 
