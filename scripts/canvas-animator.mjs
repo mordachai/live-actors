@@ -389,16 +389,15 @@ export class CanvasAnimator {
     // Clean up mask sprite
     const ms = CanvasAnimator._maskSprites.get(tokenId);
     if (ms) {
-      ms.parent?.removeChild(ms);
-      ms.destroy();
+      if (!ms.destroyed) { ms.parent?.removeChild(ms); ms.destroy(); }
       CanvasAnimator._maskSprites.delete(tokenId);
     }
     CanvasAnimator._maskTextures.delete(tokenId);
 
     const ov = CanvasAnimator._overlays.get(tokenId);
     if (ov) {
-      ov.ring?.destroy();
-      ov.bubble?.destroy();
+      if (ov.ring && !ov.ring.destroyed) ov.ring.destroy();
+      if (ov.bubble && !ov.bubble.destroyed) ov.bubble.destroy();
       CanvasAnimator._overlays.delete(tokenId);
     }
 
@@ -426,9 +425,12 @@ export class CanvasAnimator {
     CanvasAnimator._tokenTextures.clear();
     CanvasAnimator._texturePending.clear();
     CanvasAnimator._maskTextures.clear();
-    CanvasAnimator._maskSprites.forEach(ms => { ms.parent?.removeChild(ms); ms.destroy(); });
+    CanvasAnimator._maskSprites.forEach(ms => { if (!ms.destroyed) { ms.parent?.removeChild(ms); ms.destroy(); } });
     CanvasAnimator._maskSprites.clear();
-    CanvasAnimator._overlays.forEach(ov => { ov.ring?.destroy(); ov.bubble?.destroy(); });
+    CanvasAnimator._overlays.forEach(ov => {
+      if (ov.ring && !ov.ring.destroyed) ov.ring.destroy();
+      if (ov.bubble && !ov.bubble.destroyed) ov.bubble.destroy();
+    });
     CanvasAnimator._overlays.clear();
     CanvasAnimator._localTokenId = null;
     CanvasAnimator.invalidateLocalTokenCache();
