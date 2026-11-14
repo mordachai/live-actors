@@ -59,7 +59,7 @@ jobs:
           VERSION=${{ steps.module-info.outputs.version }}
           REPO=${{ github.repository }}
           jq \
-            --arg manifest "https://github.com/${REPO}/releases/download/v${VERSION}/module.json" \
+            --arg manifest "https://github.com/${REPO}/releases/latest/download/module.json" \
             --arg download "https://github.com/${REPO}/releases/download/v${VERSION}/module.zip" \
             '.manifest = $manifest | .download = $download' \
             module.json > module.json.tmp
@@ -101,3 +101,31 @@ jobs:
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Foundry's release API wants the version-pinned manifest; the manifest field
+      # inside it stays on /latest/ so installed copies keep finding updates.
+      - name: Publish to Foundry package listing
+        env:
+          FOUNDRY_RELEASE_TOKEN: ${{ secrets.FOUNDRY_RELEASE_TOKEN }}
+        run: |
+          VERSION=${{ steps.module-info.outputs.version }}
+          REPO=${{ github.repository }}
+          jq -n \
+            --arg id "$(jq -r .id module.json)" \
+            --arg version "$VERSION" \
+            --arg manifest "https://github.com/${REPO}/releases/download/v${VERSION}/module.json" \
+            --arg notes "https://github.com/${REPO}/releases/tag/v${VERSION}" \
+            --arg min "$(jq -r .compatibility.minimum module.json)" \
+            --arg verified "$(jq -r .compatibility.verified module.json)" \
+            --arg max "$(jq -r '.compatibility.maximum // ""' module.json)" \
+            '{id: $id, release: {version: $version, manifest: $manifest, notes: $notes,
+              compatibility: ({minimum: $min, verified: $verified} + (if $max == "" then {} else {maximum: $max} end))}}' \
+            > payload.json
+          cat payload.json
+          HTTP=$(curl -sS -o response.json -w "%{http_code}" \
+            -X POST "https://foundryvtt.com/_api/packages/release_version/" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: ${FOUNDRY_RELEASE_TOKEN}" \
+            -d @payload.json)
+          cat response.json; echo
+          [ "$HTTP" = "200" ]
