@@ -380,7 +380,7 @@ export class CanvasAnimator {
         token.mesh.scale.y    = s.origScaleY ?? s.baseScaleY;
         if (s.baseX != null) token.mesh.position.x = s.baseX;
         token.mesh.position.y = s.baseY;
-        token.mesh.angle      = 0;
+        token.mesh.angle      = _restAngle(token);
         token.mesh.mask       = null;
       }
       if (token) _restoreTexture(tokenId, token, CanvasAnimator._originalTextures);
@@ -665,13 +665,13 @@ export class CanvasAnimator {
         token.mesh.scale.x    = s.scaleX;
         token.mesh.scale.y    = s.scaleY;
         token.mesh.position.y = s.baseY + s.offsetY;
-        token.mesh.angle      = s.angle;
+        token.mesh.angle      = _restAngle(token) + s.angle;
       } else if (swapped) {
         // Held rest frame on a swapped texture: own the transform so it stays fit
         // & centred — Foundry sized the mesh for the original art.
         token.mesh.scale.set(s.baseScaleX, s.baseScaleY);
         token.mesh.position.y = s.baseY;
-        token.mesh.angle      = 0;
+        token.mesh.angle      = _restAngle(token);
       }
 
       // Keep mask aligned to the (now-updated) mesh. The default circular mask
@@ -691,6 +691,8 @@ export class CanvasAnimator {
             ms._tsR = r;
           }
         } else {
+          // Luminance mask matches the art, so it turns with the token's facing.
+          ms.angle  = token.mesh.angle;
           ms.width  = token.mesh.width;
           ms.height = token.mesh.height;
         }
@@ -793,7 +795,7 @@ export class CanvasAnimator {
           s.offsetY = 0; s.angle = 0; s.ringAlpha = 0; s.bubbleAlpha = 0;
           token.mesh.scale.set(s.baseScaleX, s.baseScaleY);
           token.mesh.position.y = s.baseY;
-          token.mesh.angle = 0;
+          token.mesh.angle = _restAngle(token);
           if (ov?.ring)   ov.ring.alpha   = 0;
           if (ov?.bubble) ov.bubble.alpha = 0;
           s.settled = true;
@@ -842,6 +844,13 @@ function _route(path) {
   if (!path) return path;
   if (/^(?:https?:|data:|blob:)/i.test(path) || path.includes("://")) return path;
   return foundry.utils.getRoute(path);
+}
+
+// The token's own facing, as Foundry's Token#_refreshRotation applies it. Read
+// live each frame so a rotation made mid-speech is honoured; the wobble is an
+// offset on top of this, never a replacement for it.
+function _restAngle(token) {
+  return token.document.lockRotation ? 0 : (token.document.rotation ?? 0);
 }
 
 function _restoreTexture(tokenId, token, map) {
